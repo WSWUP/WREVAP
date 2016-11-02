@@ -223,6 +223,15 @@ ENTER LATITUDE IN DECIMAL DEGREES [dd.dddd]: 39.46
 ENTER STATION ALTITUDE [m]: 1264
 ENTER AVERAGE DEPTH OF LAKE [m]: 7
 ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
+
+------------------------------------------------------------
+  ISUM - CONTROL PARAMETER FOR STATION SUMMARY
+------------------------------------------------------------
+  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED
+      (default)
+  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED
+------------------------------------------------------------
+Please enter choice: 1
 ```
 
 The results data is saved a file with the same name as the data CSV file but with a RES extension.  The overall format of the results file is very similar to the original output file, but the exact spacing of the values was changed.

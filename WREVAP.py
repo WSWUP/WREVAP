@@ -1,5 +1,5 @@
 #--------------------------------
-# Name:         WREVAP_gcm.py
+# Name:         WREVAP.py
 # Authors:      Charles Morton and Justin Huntington
 # Modified:     2016-11-02
 # Python:       2.7
@@ -33,13 +33,12 @@ def WREVAP(input_path, data_path):
 
     Program WREVAP
     Python implementation of the original Fortran model
-    Modified to run on large numbers of GCM datasets
 
     Args:
         input_path (str): file path to the input parameter file
         data_path (str): file pat to the CSV data file
     """
-    logging.info('WREVAP GCM - Python')
+    logging.info('WREVAP - Python')
     logging.info('  Input file: {}'.format(input_path))
     logging.info('  Data file:  {}'.format(data_path))
 
@@ -109,17 +108,48 @@ def WREVAP(input_path, data_path):
 
 def set_input_paths(input_path, data_path):
     """"""
-    # For now, get workspace and name from data_path
+    # Since input_path isn't required, get workspace and name from data_path
     input_ws = os.path.dirname(data_path)
-    input_name, input_ext = os.path.splitext(os.path.basename(input_path))
+    input_name, input_ext = os.path.splitext(os.path.basename(data_path))
 
-    paths.ini = input_path
+    # Set paths.INI even if inputs are entered manually
+    if input_path is None:
+        paths.ini = os.path.join(input_ws, input_name + '.ini')
+    else:
+        paths.ini = input_path
     paths.csv = data_path
     paths.res = os.path.join(input_ws, input_name + '.RES')
     paths.tgw = os.path.join(input_ws, input_name + '.TGW')
     paths.sol = os.path.join(input_ws, input_name + '.SOL')
-    # DEADBEEF
-    paths.out = os.path.join(input_ws, input_name + '.OUT')
+
+
+def get_value_from_range(v_type=float, prompt='Please enter choice: ',
+                         v_min=float('-inf'), v_max=float(' +inf')):
+    """"""
+    if v_type not in [float, int]:
+        v_type = float
+    while True:
+        try:
+            value = v_type(raw_input(prompt))
+            if v_min <= value <= v_max:
+                return value
+        except ValueError:
+            pass
+        except TypeError:
+            pass
+
+
+def get_int_from_list(v_list, v_default=None):
+    """"""
+    while True:
+        try:
+            value = int(raw_input('Please enter choice: ') or v_default)
+            if value in v_list:
+                return value
+        except ValueError:
+            pass
+        except TypeError:
+            pass
 
 
 def read_param(p_str, p_default, p_type, config):
@@ -156,98 +186,289 @@ def get_parameters():
     IT_list = [0, 1]
     IV_list = [0, 1, 2]
 
-    # Parameters must be read from file
-    if not os.path.isfile(paths.ini):
-        logging.error(
-            '\nERROR: The input file {} does not exist\n'.format(paths.ini))
-        sys.exit()
+    # Parameters can be read from file or set manually
+    if os.path.isfile(paths.ini):
+        ini_exist_flag = True
+        logging.info((
+            '\nThe following WREVAP parameter INI file was found: {}' +
+            '\n\nDo you want to enter WREVAP parameters from this INI file ' +
+            '[Y/n]?').format(paths.ini))
+        while True:
+            user_input = raw_input('Please enter choice: ').upper().strip()
+            if user_input in ['Y', '']:
+                ini_read_flag = True
+                break
+            elif user_input in ['N']:
+                ini_read_flag = False
+                break
+    elif paths.ini is None:
+        logging.info(
+            '\nThe WREVAP parameter INI file was not set' +
+            '\nPlease enter WREVAP parameters manually')
+        ini_exist_flag = False
+    else:
+        logging.info(
+            '\nThe WREVAP parameter INI file was not found' +
+            '\nPlease enter WREVAP parameters manually')
+        ini_exist_flag = False
 
-    # Read parameters from file and check for basic errors
-    logging.info('\nReading INPUT file: {}'.format(
-        os.path.basename(paths.ini)))
-    # Check that INI file opens and has section entry ([INPUTS])
-    # Get list of all parameter keys
-    config = ConfigParser.SafeConfigParser()
-    try:
-        config.readfp(open(paths.ini))
-        config.has_section('INPUTS')
-        config_items = config.items('INPUTS')
-    except ConfigParser.NoSectionError:
-        logging.error((
-            '\nERROR: {}\n' +
-            '    The paramter INI file is missing a section line\n' +
-            '    The first data line in the file needs to be: [INPUTS]\n' +
-            '    Try removing the INI file and rebuilding it\n').format(
-            paths.ini))
-        sys.exit()
-    except ConfigParser.Error:
-        logging.error((
-            '\nERROR: {}\n' +
-            '    There is an unknown problem with the paramter INI file \n' +
-            '    Try removing the INI file and rebuilding it\n').format(
-            paths.ini))
-        sys.exit()
-
-    # Check that all parameters are present in INI file
-    param_list = ['SITE', 'PHID', 'P', 'LK', 'ISUM', 'IT', 'IS', 'IV', 'IP']
-    config_keys = [i.upper() for i in dict(config_items).keys()]
-    for param_str in param_list:
-        if param_str not in config_keys:
+    if ini_exist_flag and ini_read_flag:
+        # Read parameters from file and check for basic errors
+        logging.info('\nReading INPUT file: {}'.format(
+            os.path.basename(paths.ini)))
+        # Check that INI file opens and has section entry ([INPUTS])
+        # Get list of all parameter keys
+        config = ConfigParser.SafeConfigParser()
+        try:
+            config.readfp(open(paths.ini))
+            config.has_section('INPUTS')
+            config_items = config.items('INPUTS')
+        except ConfigParser.NoSectionError:
             logging.error((
-                '\nERROR: The parameter {} was not found in the ' +
-                'parameter INI file').format(param_str))
+                '\nERROR: {}\n' +
+                '  The paramter INI file is missing a section line\n' +
+                '  The first data line in the file needs to be: [INPUTS]\n' +
+                '  Try removing the INI file and rebuilding it\n').format(
+                    paths.ini))
             sys.exit()
-    if (('PPN' not in config_keys) or
-        ('DA' not in config_keys and
-         'SALT' not in config_keys)):
-            logging.error(
-                '\nERROR: Either the PPN parameter or the DA and SALT ' +
-                'parameters must be specified')
+        except ConfigParser.Error:
+            logging.error((
+                '\nERROR: {}\n' +
+                '  There is an unknown problem with the paramter INI file \n' +
+                '  Try removing the INI file and rebuilding it\n').format(
+                paths.ini))
             sys.exit()
 
-    # Read parameters from file
-    SITE = read_param('SITE', '', str, config)
-    PHID = read_param('PHID', None, float, config)
-    if not (-90 <= PHID <= 90):
-        logging.error(
-            '\nERROR: PHID paramter must be between -90 and +90')
-        sys.exit()
-    P = read_param('P', None, float, config)
-    if not P or P < 0:
-        logging.error("\nERROR: P paramter must be >= 0")
-        sys.exit()
-    LK = read_param('LK', None, float, config)
-    check_param_in_list(LK, LK_list, 'LK')
-    if LK == 0:
-        SALT, DA = 0.0, 0.0
-        PPN = read_param('PPN', None, float, config)
-        if not PPN or PPN < 0:
-            logging.error('\nERROR: PPN paramter must be >= 0 when LK==0')
-            sys.exit()
-        DA = 0.0
-        SALT = 0.0
-    elif LK in [1, 2, 3]:
-        PPN = 0.0
-        DA = read_param('DA', None, float, config)
-        SALT = read_param('SALT', None, float, config)
-        if not DA or DA <= 0:
+        # Check that all parameters are present in INI file
+        param_list = [
+            'SITE', 'PHID', 'P', 'LK', 'ISUM', 'IT', 'IS', 'IV', 'IP']
+        # config_dict = dict(config_items)
+        config_keys = [i.upper() for i in dict(config_items).keys()]
+        for param_str in param_list:
+            if param_str not in config_keys:
+                logging.error((
+                    '\nERROR: The parameter {} was not found in the ' +
+                    'parameter INI file').format(param_str))
+                sys.exit()
+        if (('PPN' not in config_keys) or
+            ('DA' not in config_keys and
+             'SALT' not in config_keys)):
+                logging.error(
+                    '\nERROR: Either the PPN parameter or the DA and SALT ' +
+                    'parameters must be specified')
+                sys.exit()
+
+        # Read parameters from file
+        SITE = read_param('SITE', '', str, config)
+        PHID = read_param('PHID', None, float, config)
+        if not (-90 <= PHID <= 90):
             logging.error(
-                '\nERROR: DA paramter must be > 0 when LK > 0')
+                '\nERROR: PHID paramter must be between -90 and +90')
             sys.exit()
-        elif not SALT or SALT < 0:
-            logging.error(
-                '\nERROR: SALT paramter must be >= 0 when LK > 0')
+        P = read_param('P', None, float, config)
+        if not P or P < 0:
+            logging.error('\nERROR: P paramter must be >= 0')
             sys.exit()
-    ISUM = read_param('ISUM', 0, int, config)
-    IP = read_param('IP', 0, int, config)
-    IS = read_param('IS', 1, int, config)
-    IT = read_param('IT', 0, int, config)
-    IV = read_param('IV', 0, int, config)
-    check_param_in_list(ISUM, ISUM_list, 'ISUM')
-    check_param_in_list(IP, IP_list, 'IP')
-    check_param_in_list(IS, IS_list, 'IS')
-    check_param_in_list(IT, IT_list, 'IT')
-    check_param_in_list(IV, IV_list, 'IV')
+        LK = read_param('LK', None, float, config)
+        check_param_in_list(LK, LK_list, 'LK')
+        if LK == 0:
+            SALT, DA = 0.0, 0.0
+            PPN = read_param('PPN', None, float, config)
+            if not PPN or PPN < 0:
+                logging.error('\nERROR: PPN paramter must be >= 0 when LK==0')
+                sys.exit()
+            DA = 0.0
+            SALT = 0.0
+        elif LK in [1, 2, 3]:
+            PPN = 0.0
+            DA = read_param('DA', None, float, config)
+            SALT = read_param('SALT', None, float, config)
+            if not DA or DA <= 0:
+                logging.error(
+                    '\nERROR: DA paramter must be > 0 when LK > 0')
+                sys.exit()
+            elif not SALT or SALT < 0:
+                logging.error(
+                    '\nERROR: SALT paramter must be >= 0 when LK > 0')
+                sys.exit()
+        ISUM = read_param('ISUM', 0, int, config)
+        IP = read_param('IP', 0, int, config)
+        IS = read_param('IS', 1, int, config)
+        IT = read_param('IT', 0, int, config)
+        IV = read_param('IV', 0, int, config)
+        check_param_in_list(ISUM, ISUM_list, 'ISUM')
+        check_param_in_list(IP, IP_list, 'IP')
+        check_param_in_list(IS, IS_list, 'IS')
+        check_param_in_list(IT, IT_list, 'IT')
+        check_param_in_list(IV, IV_list, 'IV')
+    else:
+        # Enter parameters manually
+        dash_line = '-' * 60
+        # dash_line = '  ' + '-' * 60
+        logging.info('')
+        SITE = raw_input('Enter a site name: ').upper().strip()
+
+        # LK
+        logging.info((
+            '\n{}\n' +
+            '  PARAMETER LK - MODEL OPTION\n{}\n' +
+            '  0 - CRAE (AREAL EVAPOTRANSPIRATION)\n' +
+            '  1 - CRWE (WET SURFACE EVAPORATION)\n' +
+            '  2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION\n' +
+            '            ON SOLAR AND WATER BORNE ENERGY INPUTS)\n' +
+            '  3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER\n' +
+            '            BORNE ENERGY INPUTS)\n{}').format(
+                dash_line, dash_line, dash_line))
+        LK = get_int_from_list(LK_list)
+
+        # IT
+        logging.info((
+            '\n{}\n' +
+            '  IT - CONTROL PARAMETER FOR TEMPERATURE DATA\n{}\n' +
+            '  0 - AIR TEMPERATURE IN CELSIUS (default)\n' +
+            '  1 - AIR TEMPERATURE IN FAHRENHEIT\n{}').format(
+                dash_line, dash_line, dash_line))
+        IT = get_int_from_list(IT_list, 0)
+
+        # IS
+        logging.info((
+            '\n{}\n' +
+            '  IS - CONTROL PARAMETER FOR INSOLATION DATA\n{}\n' +
+            '  0 - SUNSHINE DURATION RATIO\n' +
+            '  1 - SUNSHINE DURATION IN HOURS/DAY (default)\n' +
+            '  2 - INCIDENT GLOBAL RADIATION IN LY/DAY\n' +
+            '  3 - INCIDENT GLOBAL RADIATION IN MJ/M**2/DAY\n{}').format(
+                dash_line, dash_line, dash_line))
+        IS = get_int_from_list(IS_list, 1)
+
+        # IV
+        if IT == 0:
+            T_units = 'C'
+        else:
+            T_units = 'F'
+        logging.info((
+            '\n{}\n' +
+            '  IV - CONTROL PARAMETER FOR HUMIDITY DATA\n{}\n' +
+            '  0 - TD IS DEW POINT IN DEG.{} (default)\n' +
+            '  1 - TD IS VAPOUR PRESSURE AT DEW POINT IN M\n' +
+            '  2 - TD IS RELATIVE HUMIDITY\n{}').format(
+                dash_line, dash_line, T_units, dash_line))
+        IV = get_int_from_list(IV_list, 0)
+
+        # IP
+        logging.info((
+            '\n{}\n' +
+            '  IP - CONTROL PARAMETER FOR STATION ALTITUDE\n{}\n' +
+            '  0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION IN (default)\n' +
+            '  1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL IN M\n' +
+            '{}').format(dash_line, dash_line, dash_line))
+        IP = get_int_from_list(IP_list, 0)
+
+        # PHID - Latitude
+        logging.info('')
+        PHID = get_value_from_range(
+            float, 'ENTER LATITUDE IN DECIMAL DEGREES [dd.dddd]: ', -90, 90)
+
+        # P - Station Altitide or Average Atmopsheric Pressure at Station
+        if IP == 1:
+            prompt = 'ENTER STATION ALTITUDE [m]: '
+        elif IP == 0:
+            prompt = 'ENTER AVERAGE ATMOSPHERIC PRESSURE AT STATION [mb]:'
+        P = get_value_from_range(
+            float, prompt, 0, float(' +inf'))
+
+        if LK == 0:
+            # PPN - Average Annual Precipitation
+            PPN = get_value_from_range(
+                float, 'ENTER AVERAGE ANNUAL PRECIPITATION [mm]: ',
+                0, float(' +inf'))
+            SALT = 0.0
+            DA = 0.0
+        if LK != 0:
+            # DA - Average Depth
+            DA = get_value_from_range(
+                float, 'ENTER AVERAGE DEPTH OF LAKE [m]: ',
+                1, float(' +inf'))
+            # SALT - Total dissolved solids or salinity
+            SALT = get_value_from_range(
+                float,
+                'ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: ',
+                0, float(' +inf'))
+            PPN = 0.0
+
+        # ISUM
+        logging.info((
+            '\n{}\n' +
+            '  ISUM - CONTROL PARAMETER FOR STATION SUMMARY\n{}\n' +
+            '  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED\n' +
+            '      (default)\n' +
+            '  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED\n' +
+            '{}').format(dash_line, dash_line, dash_line))
+        ISUM = get_int_from_list(ISUM_list, 0)
+
+        # Save parameters to PAR file
+        logging.info(
+            '\nDo you want to save entered parameters in an INI file [Y/n]?')
+        while True:
+            CHR = raw_input('Please enter choice: ').upper().strip()
+            if CHR in ['Y', 'N', '']:
+                break
+        if CHR in ['Y', '']:
+            par_f = open(paths.ini, 'w')
+            par_str = ((
+                '# WREVAP INPUTS FILE ##\n' +
+                '# FIRST DATA LINE MUST BE "[INPUTS]"\n[INPUTS]\n\n' +
+                '# SITE NAME\n' +
+                'SITE = {0:<20s}\n\n' +
+                '# LATITUDE [DECIMAL DEGREES]\n' +
+                'PHID = {1:<6.2f}\n\n' +
+                '# STATION ALTITUDE OR PRESSURE (SEE PARAMETER IP)\n' +
+                '# AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB]\n' +
+                '# ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]\n' +
+                'P = {2:<9.2f}\n\n' +
+                '# AVERAGE ANNUAL PRECIPITATION [MM/YEAR]\n' +
+                '# USED IF LK MODEL = 0\n' +
+                'PPN = {3:<6.1f}\n\n' +
+                '# AVERAGE DEPTH OF THE LAKE [M]\n' +
+                '# USED IF LK MODEL > 0\n' +
+                'DA = {4:<6.1f}\n\n' +
+                '# TOTAL DISSOLVED SOLIDS OR SALINITY [PPM]\n' +
+                '# USED IF LK MODEL > 0\n' +
+                'SALT = {5:<6.1f}\n\n' +
+                '# LK - MODEL OPTION\n' +
+                '#  0 - CRAE (AREAL EVAPOTRANSPIRATION)\n' +
+                '#  1 - CRWE (WET SURFACE EVAPORATION)\n' +
+                '#  2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION\n' +
+                '#            ON SOLAR AND WATER BORNE ENERGY INPUTS)\n' +
+                '#  3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER\n' +
+                '#            BORNE ENERGY INPUTS\n' +
+                'LK = {6:<1d}\n\n' +
+                '# IT - CONTROL PARAMETER FOR TEMPERATURE DATA\n' +
+                '#  0 - AIR TEMPERATURE [DEGREES CELSIUS] (DEFAULT)\n' +
+                '#  1 - AIR TEMPERATURE [DEGREES FAHRENHEIT]\n' +
+                'IT = {8:<1d}\n\n' +
+                '# IS - CONTROL PARAMETER FOR INSOLATION DATA\n' +
+                '#  0 - SUNSHINE DURATION RATIO\n' +
+                '#  1 - SUNSHINE DURATION [HOURS/DAY] (DEFAULT)\n' +
+                '#  2 - INCIDENT GLOBAL RADIATION [LY/DAY]\n' +
+                '#  3 - INCIDENT GLOBAL RADIATION [MJ/M^2/DAY]\n' +
+                'IS = {9:<1d}\n\n' +
+                '# IV - CONTROL PARAMETER FOR HUMIDITY DATA\n' +
+                '#  0 - TD IS DEW POINT IN DEGREES [SEE PARAMETER IT FOR UNITS] (DEFAULT)\n' +
+                '#  1 - TD IS VAPOUR PRESSURE AT DEW POINT [MB]\n' +
+                '#  2 - TD IS RELATIVE HUMIDITY\n' +
+                'IV = {10:<1d}\n\n' +
+                '# IP - CONTROL PARAMETER FOR STATION ALTITUDE\n' +
+                '#  0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB] (DEFAULT)\n' +
+                '#  1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]\n' +
+                'IP = {11:<1d}\n' +
+                '# ISUM - CONTROL PARAMETER FOR STATION SUMMARY\n' +
+                '#  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED (DEFAULT)\n' +
+                '#  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED\n' +
+                'ISUM = {7:<1d}\n\n').format(
+                    SITE, PHID, P, PPN, DA, SALT, LK, ISUM, IT, IS, IV, IP))
+            par_f.write(par_str)
+            par_f.close()
 
     # Save parameters
     param.SITE = SITE
@@ -279,7 +500,7 @@ def read_data_file():
                 'S' in test_line and 'T' in test_line and 'TD' in test_line):
             header_line = test_i
             data_line = test_i + 1
-            logging.debug(
+            logging.info(
                 '  Assuming line {} is the field names\n  Fields: {}'.format(
                     (header_line + 1),
                     ' '.join(dat_lines[header_line].split(','))))
@@ -299,7 +520,6 @@ def read_data_file():
     data.TW = [0.0] * param.NN
     data.SW = [0.0] * param.NN
     data.HADD = [0] * param.NN
-    data.PPT = [0.0] * param.NN
     logging.info('  {} data points in file\n'.format(param.NN))
 
     # Get column numbers for each field
@@ -317,27 +537,26 @@ def read_data_file():
     T_i = column_index(['T'])
     S_i = column_index(['S'])
     HADD_i = column_index(['HADD'])
-    PPT_i = column_index(['PPT'])
 
     # Check date fields
     if YEAR_i >= 0 and DOY_i >= 0 and LENGTH_i >= 0:
         dt_doy_flag = True
-        dt_format = '%Y_%j'
+        dt_format = '%Y_%j'()
     elif YEAR_i >= 0 and DAY_i >= 0 and DAY_i >= 0 and LENGTH_i >= 0:
         dt_doy_flag = False
         dt_format = '%Y_%m_%d'
     else:
-        logging.error('  Fields: {}'.format(dat_fields))
+        logging.error('Fields: {}'.format(dat_fields))
         logging.error(
-            '\nERROR: Data file is missing start date or length fields' +
-            '\nERROR: YEAR/STARTDOY/LENGTH or YEAR/MONTH/STARTDAY/LENGTH\n')
+            '\nERROR: Data file is missing start date or length fields\n' +
+            '  ERROR: YEAR/STARTDOY/LENGTH or YEAR/MONTH/STARTDAY/LENGTH\n')
         raise SystemExit()
 
     # Check data fields
     if not (S_i and T_i and TD_i):
         logging.error(
-            '\nERROR: Data file is missing data fields' +
-            '\nERROR: TD, T, or S\n')
+            '\nERROR: Data file is missing data fields\n' +
+            '  ERROR: TD, T, or S\n')
         raise SystemExit()
 
     # Read in data
@@ -348,11 +567,11 @@ def read_data_file():
         year = int(dat_line[YEAR_i])
         if dt_doy_flag:
             dt_start = dt.datetime.strptime(
-                '{:04d}_{:03d}'.format(year, int(dat_line[DOY_i])),
+                '{}_{:03d}'.format(year, int(dat_line[DOY_i])),
                 dt_format)
         else:
             dt_start = dt.datetime.strptime(
-                '{04d}_{:02d}_{:02d}'.format(
+                '{}_{:02d}_{:02d}'.format(
                     year, int(dat_line[MONTH_i]), int(dat_line[DAY_i])),
                 dt_format)
         data.DATE[i] = dt_start
@@ -360,8 +579,7 @@ def read_data_file():
         data.TD[i] = float(dat_line[TD_i])
         data.T[i] = float(dat_line[T_i])
         data.S[i] = float(dat_line[S_i])
-        data.HADD[i] = float(dat_line[HADD_i]) if HADD_i >= 0 else 0
-        data.PPT[i] = float(dat_line[PPT_i]) if PPT_i >= 0 else 0
+        data.HADD[i] = dat_line[HADD_i] if HADD_i >= 0 else 0
 
 
 def initialize():
@@ -375,7 +593,7 @@ def initialize():
         P = 1013 * (1 - 0.0065 * P / 288) ** 5.256
     if P < 0:
         logging.error(
-            '\n  *** INPUT ERROR NUMBER = 23\n' +
+            '\n*** INPUT ERROR NUMBER = 23\n' +
             'Value of P should be greater than or equal to 0\n')
         raise SystemExit()
     param.P = P
@@ -719,13 +937,13 @@ def TRANLK(i):
 def compute_budget_2(i):
     """
     BUDGT2 CALCULATES THE:
-       POWER EQUIVALENT OF AREAL EVAPOTRANSPIRATION, LAKE-SIZE
-       WET SURFACE EVAPORATION OR LAKE EVAPORATION(ET),
-       POWER EQUIVALENT OF POTENTIAL EVAPOTRANSPIRATION,
-       PAN-SIZE WET SURFACE EVAPORATION OR POTENTIAL EVAPORATION(ETP),
-       NET RADIATION OR NET AVALAIBLE ENERGY WITH SOIL-PLANT
-       SURFACES, WET SURFACE OR LAKE SURFACE AT TEMPERATURE T(RT)
-       AND CALLS print_output TO LIST INPUTS AND RESULTS FOR EACH TIME PERIOD
+        POWER EQUIVALENT OF AREAL EVAPOTRANSPIRATION, LAKE-SIZE
+        WET SURFACE EVAPORATION OR LAKE EVAPORATION(ET),
+        POWER EQUIVALENT OF POTENTIAL EVAPOTRANSPIRATION,
+        PAN-SIZE WET SURFACE EVAPORATION OR POTENTIAL EVAPORATION(ETP),
+        NET RADIATION OR NET AVALAIBLE ENERGY WITH SOIL-PLANT
+        SURFACES, WET SURFACE OR LAKE SURFACE AT TEMPERATURE T(RT)
+        AND CALLS print_output TO LIST INPUTS AND RESULTS FOR EACH TIME PERIOD
     """
     if param.LK <= 1:
         DATE = data.DATE[i]
@@ -751,12 +969,12 @@ def compute_budget_2(i):
     ATM = 10 * (VD / V - S - 0.42)
     if ATM < 0:
         ATM = 0.0
-    if ATM > 1:
+    elif ATM > 1:
         ATM = 1.0
 
     # PROPORTIONAL INCREASE IN ATMOSPHERIC RADIATION DUE TO CLOUDS (RHO)
     RHO = (0.18 * 1013 / param.P *
-           (ATM * math.sqrt((1 - S)) + (1 - ATM) * (1 - S) ** 2))
+           (ATM * math.sqrt(1 - S) + (1 - ATM) * (1 - S) ** 2))
 
     # NET LONG-WAVE RADIATION LOSS WITH SURFACE AT T (B)
     AK = T + 273
@@ -777,8 +995,8 @@ def compute_budget_2(i):
     RTC = RT
     if RTC < 0:
         RTC = 0.0
-    ZETA = (1. / (0.28 * (1 + VD / V) +
-                  const.FZ / 28. * DELTA * RTC / const.GAMMA[J] / EE))
+    ZETA = 1.0 / (0.28 * (1 + VD / V) + const.FZ / 28 *
+                  DELTA * RTC / const.GAMMA[J] / EE)
     if ZETA < 1:
         ZETA = 1.0
 
@@ -915,15 +1133,12 @@ def compute_available_heat():
 def print_output():
     """"""
     res_f = open(paths.res, 'w')
-    # DEADBEEF
-    if param.LK > 1:
-        out_f = open(paths.out, 'w')
 
     SITE = '{0:20s}'.format(param.SITE)
     PHID = '{0:>6s}{1:<7.2f}'.format(' PHID= ', param.PHID)
     if param.IP == 0:
         LINE1 = '{0:>6s}{1:<7.2f}'.format(' P= ', param.PW)
-    elif param.IP == 1:
+    if param.IP == 1:
         LINE1 = '{0:>6s}{1:<7.1f}'.format(' ALTI= ', param.PW)
     NET = '{0:>10s}'.format('NET ')
 
@@ -988,12 +1203,6 @@ def print_output():
         LINE2_end = '{0:>10s}{1:>10s}{2:>10s}{3:>10s}'.format(
             'RAD.', 'POTENT.', 'LAKE', 'GW(W/M*M)')
         res_f.write('{}{}{}\n'.format(LINE2_start, LINE2_mid, LINE2_end))
-        # DEADBEEF
-        LINE2_end = [
-            'TD_C', 'T_C', 'RS_MJ_M2_D', 'HADD', 'NET_RAD_MM',
-            'ET_POT_MM', 'ET_LAKE_MM', 'GW_W_M2', 'PPT_MM']
-        out_f.write(','.join(LINE2_start.split() + LINE2_end) + '\n')
-    del LINE2_start, LINE2_mid, LINE2_end, LINE2
 
     for i, dt_start in enumerate(data.DATE):
         MONTH = '{0:>10s}'.format(calendar.month_abbr[dt_start.month].upper())
@@ -1031,12 +1240,6 @@ def print_output():
             res_f.write('{}\n'.format(''.join([
                 YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
                 RTMM, ETPMM, ETMM, GW])))
-            # DEADBEEF
-            PPT = '{0:10.2f}'.format(data.PPT[i])
-            out_f.write(','.join([
-                YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
-                RTMM, ETPMM, ETMM, GW, PPT]).replace(' ', '') + '\n')
-            del PPT
             del HADD, GW
         del YEAR, MONTH, DAY, LENGTH, SW
         del RTMM, ETPMM, ETMM
@@ -1069,7 +1272,6 @@ def print_monthly_averages():
         TRTM[month] = sum(TRTM[month].values()) / len(TRTM[month].values())
         TETPM[month] = sum(TETPM[month].values()) / len(TETPM[month].values())
         TETM[month] = sum(TETM[month].values()) / len(TETM[month].values())
-
     # Sum of monthly averages
     RTNYR = sum(TRTM.values())
     ETPNYR = sum(TETPM.values())
@@ -1121,14 +1323,14 @@ def is_valid_file(parser, arg):
 def arg_parse():
     """"""
     parser = argparse.ArgumentParser(
-        description='WREVAP GCM - Python',
+        description='WREVAP - Python',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '-i', '--ini', metavar='INI', type=lambda x: is_valid_file(parser, x),
-        required=True, help='Input ini file')
+        default=None, help='Input ini file')
     parser.add_argument(
         '--data', metavar='CSV', type=lambda x: is_valid_file(parser, x),
-        required=True, help='Data csv file')
+        required=False, help='Data csv file')
     parser.add_argument(
         '-o', '--overwrite', default=False, action="store_true",
         help='Force overwrite of existing files')
