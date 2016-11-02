@@ -1,35 +1,37 @@
 # WREVAP
 
-## Original Documentation
+Python implementation of "Operational Estimates of Areal Evapotranspiration and Lake Evaporation - Program WREVAP" code
 
-It is highly recommended that the user read the original WREVAP model documentation.  Most questions about the WREVAP model, parameters, or units, can be answered by referring to the original WREVAP documentation (Morton et al 1985).  This version of the WREVAP model is functionally identical to the original WREVAP, however input format and options has been significantly improved for easy data entry and formatting.  All changes to the input data, parameters, and format are outlined below. Where possible, the section number of the original documentation is listed in square brackets [].
+# Original Documentation
 
-## Requirements
+It is highly recommended that the user read the original WREVAP model documentation.  Most questions about the WREVAP model, parameters, or units, can be answered by referring to the original WREVAP documentation (Morton et al. 1985).  This version of the WREVAP model is functionally identical to the original WREVAP, however input format and options have been significantly improved for easy data entry and formatting.  All changes to the input data, parameters, and format are outlined below.  Where possible, the section number of the original documentation is listed in square brackets [].
 
-Python 2.6 or 2.7 must be installed on the system.  Python 2.6 is installed by default with ArcGIS 10.0, but it if needs to be installed, it can be downloaded from http://www.python.org/download/.  Make sure to select the installer that corresponds with your operating system.  The code was not developed or tested for Python 3.
+# Requirements
 
-The Python numerical modeling module NumPy must also be installed.  NumPy 1.3 is installed by default with ArcGIS 10.0, although it is a good idea to upgrade to the latest version (1.6.1 as of 2012-03-13).  The NumPy installer can be downloaded from http://numpy.scipy.org/.  Make sure to select the NumPy installer that corresponds with your Python version and operating system (for example: numpy-1.6.1-win32-superpack-python2.6.exe for the default Python install from ArcGIS 10.0 on a windows machine).
+Python 2.7 must be installed on the system.  Python 2.7 is installed by default with ArcGIS 10.1+, but it if needs to be installed, it can be downloaded from http://www.python.org/download/.  Make sure to select the installer that corresponds with your operating system.  The code was not developed or tested for Python 3.
+
+The Python numerical modeling module NumPy must also be installed.  NumPy is installed by default with ArcGIS 10.1+.  The NumPy installer can be downloaded from http://numpy.scipy.org/.  Make sure to select the NumPy installer that corresponds with your Python version and operating system (for example: numpy-1.10.0-win32-superpack-python2.7.exe for the default Python install from ArcGIS 10.0 on a windows machine).
 
 All of the following notes are assuming that the WREVAP script is being run on a computer running the Microsoft Windows XP operating system or newer.  The script should be able to execute on any computer that has Python and NumPy installed, but it was not tested on any older Windows or non-Windows machines.
 
-## Reproducibility
+# Reproducibility
 
 The new Python version of the model may not always generate outputs that are identical to the original model, however differences are negligible.  The original fortran version of the model used some 32-bit floating point values and math functions, while the Python version uses entirely 64 bit floating point values and functions, which are more precise than the original version.  Rounding errors in the original model result in negligible differences between the output data.
 
-## File Setup
+# File Setup
 
-### CSV data file
+## CSV data file
 
 The only file/data required to run the WREVAP model is a CSV (comma separated value) file of the time period starting date, temperature (T), humidity (TD), and insolation (S) (i.e. solar radiation) data.  The waterborne energy input to the lake (HADD) could also be included in this file, but it is not a required field, and later computed if not input.  For each entry, the starting date must be specified either by listing the YEAR, MONTH, DAY (of month) or the YEAR and DOY (day of year).  It is also necessary to include the LENGTH of the time period.  This format is similar to Record E [6.5] of File Tape 1 (the .DAT file) in the original WREVAP model where the T, TD, and S are listed along with the start date.
 
 The script will only read data below the field names (YEAR, LENGTH, T, TD, S) in the CSV data file, so additional metadata can be stored in the header of the file.  In the following example, the site name is included in the file, but it will not be read.  In the original model, the C1, C2, & C3 fields (Record D [6.4] and E [6.5] of File Tape 1,) could be used to specify whether a T, TD, or S value were observed or estimated.  These values were not used by the model and were removed from this version.  Finally, the fields can be arranged in any order, but the field names must be capitalized and spelled exactly.
 
-### Units
+## Units
 
 The units for the data are specified through the script interface or a separate parameter INI file.
 
 
-### Example Input
+## Example Input
 
 The following is the CSV file for LAHONTAN reservoir, Nevada, shown as a table.  Details on the source of the input data for Lahontan reservoir can be found in Huntington and McEvoy (2011).
 
@@ -62,184 +64,180 @@ YEAR,MONTH,STARTDAY,LENGTH,TD,T,S
 2001,12,1,31,-2.5,2,5.92
 ```
 
-### INI Parameter File
+## INI Parameter File
 
-The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not detected, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  ## indicate commented lines for information only; comments could be removed to make the input file significantly shorter in length.
+The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not detected, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  # indicate commented lines for information only; comments could be removed to make the input file significantly shorter in length.
 
 ```
-## WREVAP INPUTS FILE ##
-## FIRST DATA LINE MUST BE "[INPUTS]"
+# WREVAP INPUTS FILE
+# FIRST DATA LINE MUST BE "[INPUTS]"
 [INPUTS]
 
-## SITE NAME
+# SITE NAME
 SITE = LAHONTAN
 
-## LATITUDE [DECIMAL DEGREES]
+# LATITUDE [DECIMAL DEGREES]
 PHID = 39.46
 
-## STATION ALTITUDE OR PRESSURE (SEE PARAMETER IP)
-## AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB]
-## ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]
+# STATION ALTITUDE OR PRESSURE (SEE PARAMETER IP)
+# AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB]
+# ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]
 P = 1264.00
 
-## AVERAGE ANNUAL PRECIPITATION [MM/YEAR]
-## USED IF LK MODEL = 0
+# AVERAGE ANNUAL PRECIPITATION [MM/YEAR]
+# USED IF LK MODEL = 0
 PPN = 0.0
 
-## AVERAGE DEPTH OF THE LAKE [M]
-## USED IF LK MODEL > 0
+# AVERAGE DEPTH OF THE LAKE [M]
+# USED IF LK MODEL > 0
 DA = 7.0
 
-## TOTAL DISSOLVED SOLIDS OR SALINITY [PPM]
-## USED IF LK MODEL > 0
+# TOTAL DISSOLVED SOLIDS OR SALINITY [PPM]
+# USED IF LK MODEL > 0
 SALT = 300.0
 
-## LK - MODEL OPTION
-##  0 - CRAE (AREAL EVAPOTRANSPIRATION)
-##  1 - CRWE (WET SURFACE EVAPORATION)
-##  2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION
-##            ON SOLAR AND WATER BORNE ENERGY INPUTS)
-##  3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER
-##            BORNE ENERGY INPUTS
+# LK - MODEL OPTION
+#  0 - CRAE (AREAL EVAPOTRANSPIRATION)
+#  1 - CRWE (WET SURFACE EVAPORATION)
+#  2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION
+#            ON SOLAR AND WATER BORNE ENERGY INPUTS)
+#  3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER
+#            BORNE ENERGY INPUTS
 LK = 3
 
-## ISUM - CONTROL PARAMETER FOR STATION SUMMARY
-##  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED (DEFAULT)
-##  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED
+# ISUM - CONTROL PARAMETER FOR STATION SUMMARY
+#  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED (DEFAULT)
+#  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED
 ISUM = 1
 
-## IT - CONTROL PARAMETER FOR TEMPERATURE DATA
-##  0 - AIR TEMPERATURE [DEGREES CELSIUS] (DEFAULT)
-##  1 - AIR TEMPERATURE [DEGREES FAHRENHEIT]
+# IT - CONTROL PARAMETER FOR TEMPERATURE DATA
+#  0 - AIR TEMPERATURE [DEGREES CELSIUS] (DEFAULT)
+#  1 - AIR TEMPERATURE [DEGREES FAHRENHEIT]
 IT = 0
 
-## IS - CONTROL PARAMETER FOR INSOLATION DATA
-##  0 - SUNSHINE DURATION RATIO
-##  1 - SUNSHINE DURATION [HOURS/DAY] (DEFAULT)
-##  2 - INCIDENT GLOBAL RADIATION [LY/DAY]
-##  3 - INCIDENT GLOBAL RADIATION [MJ/M^2/DAY]
+# IS - CONTROL PARAMETER FOR INSOLATION DATA
+#  0 - SUNSHINE DURATION RATIO
+#  1 - SUNSHINE DURATION [HOURS/DAY] (DEFAULT)
+#  2 - INCIDENT GLOBAL RADIATION [LY/DAY]
+#  3 - INCIDENT GLOBAL RADIATION [MJ/M^2/DAY]
 IS = 3
 
-## IV - CONTROL PARAMETER FOR HUMIDITY DATA
-##  0 - TD IS DEW POINT IN DEGREES [SEE PARAMETER IT FOR UNITS] (DEFAULT)
-##  1 - TD IS VAPOUR PRESSURE AT DEW POINT [MB]
-##  2 - TD IS RELATIVE HUMIDITY
+# IV - CONTROL PARAMETER FOR HUMIDITY DATA
+#  0 - TD IS DEW POINT IN DEGREES [SEE PARAMETER IT FOR UNITS] (DEFAULT)
+#  1 - TD IS VAPOUR PRESSURE AT DEW POINT [MB]
+#  2 - TD IS RELATIVE HUMIDITY
 IV = 0
 
-## IP - CONTROL PARAMETER FOR STATION ALTITUDE
-##  0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB] (DEFAULT)
-##  1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]
+# IP - CONTROL PARAMETER FOR STATION ALTITUDE
+#  0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION [MB] (DEFAULT)
+#  1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL [M]
 IP = 1
 ```
 
-### TGW/SOL available water and solar energy files
+## TGW/SOL available water and solar energy files
 The format for these files is unchanged.  If no antecedent solar and waterborne energy inputs are available, the CRLE with LK=2 must be run first.  The .SOL file must be copied and renamed .TGW, and the CRLE must be run with LK=3.  Refer to the documentation on Record F [6.6] of File Tape 2 and Record G [6.7] of File Tape 3 for more information.
 
 
-## Running The Model
+# Running The Model
 
 The WREVAP script can be run by either double clicking the script (which in windows will load a temporary command prompt) or calling the script directly from the command prompt.  Currently there is no GUI (graphical user interface) and all interaction with the script is the through the command prompt and the parameter and data files.
 
 When calling the script from the command prompt, the path to the data CSV file can be passed as the first argument.  It if is not passed, the script will prompt the user to enter the path.  If only a file name is entered, the script will attempt to use the current working directory (typically the directory the script was called from).  The script will then look for a parameter INI file with the same name as the data CSV file.  If one is not found, the user is prompted to enter the parameter values.
 
-The following are examples of how to run the script from a command prompt without an .INI file, assuming that the script is located in the current working directory:
+The following are examples of how to run the script from a command prompt without an .INI file, assuming that the script and data file are located in the current working directory:
 
 ```
-> python WREVAP.py
+> python WREVAP.py --data example\lahontan.csv
 
 WREVAP - Python
-  Enter input data filename or path: lahontan
-
 ```
-(Script will try loading lahontan.csv even if the file extension is not set)
-(The full path to a different folder can also be specified)
+Notes:
++ The script will try loading lahontan.csv even if the file extension is not set
++ Relative or full paths can be specified
 
 The example below illustrates the user prompts for Lahontan reservoir, where the CRLE model is desired given inputs of TD, T, and S, and no heat storage estimates are available.
 
 ```
 WREVAP - Python
-  Enter input data filename or path (i.e. sample.csv): lahontan
+  Input file: None
+  Data file: D:\WREVAP\example\lahontan.csv
 
-  File path not specified, using current working directory (D:\WREVAP\lahontan)
-  File extension not specified, assuming .CSV extension
+The WREVAP parameter INI file was not found
+Please enter WREVAP parameters manually
 
-  Data Workspace:  D:\WREVAP\lahontan
-  Data Filename:   lahontan.csv
+Enter a site name: Lahontan
 
-  The WREVAP parameter INI file was not found
-  Please enter WREVAP parameters manually
-
-  Enter a site name: Lahontan
-
-  ------------------------------------------------------------
-      PARAMETER LK - MODEL OPTION
-  ------------------------------------------------------------
-      0 - CRAE (AREAL EVAPOTRANSPIRATION)
-      1 - CRWE (WET SURFACE EVAPORATION)
-      2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION
-                ON SOLAR AND WATER BORNE ENERGY INPUTS)
-      3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER
-                BORNE ENERGY INPUTS)
-  ------------------------------------------------------------
-  Please enter choice: 2
+------------------------------------------------------------
+  PARAMETER LK - MODEL OPTION
+------------------------------------------------------------
+  0 - CRAE (AREAL EVAPOTRANSPIRATION)
+  1 - CRWE (WET SURFACE EVAPORATION)
+  2 - CRLE (LAKE EVAPORATION WITHOUT ANTECEDENT INFORMATION
+            ON SOLAR AND WATER BORNE ENERGY INPUTS)
+  3 - CRLE (LAKE EVAPORATION WITH ANTECEDENT SOLAR AND WATER
+            BORNE ENERGY INPUTS)
+------------------------------------------------------------
+Please enter choice: 2
 ```
 
-The below screen shot illustrate the user prompts for specifying units of input data and water body latitude, altitude (m), average depth (m) and salinity (mg/l or ppm).
+The example below illustrates the user prompts for specifying units of input data and water body latitude, altitude (m), average depth (m) and salinity (mg/l or ppm).
 
 ```
-  ------------------------------------------------------------
-      IT - CONTROL PARAMETER FOR TEMPERATURE DATA
-  ------------------------------------------------------------
-      0 - AIR TEMPERATURE IN CELSIUS (default)
-      1 - AIR TEMPERATURE IN FAHRENHEIT
-  ------------------------------------------------------------
-  Please enter choice: 0
+------------------------------------------------------------
+  IT - CONTROL PARAMETER FOR TEMPERATURE DATA
+------------------------------------------------------------
+  0 - AIR TEMPERATURE IN CELSIUS (default)
+  1 - AIR TEMPERATURE IN FAHRENHEIT
+------------------------------------------------------------
+Please enter choice: 0
 
-  ------------------------------------------------------------
-      IS - CONTROL PARAMETER FOR INSOLATION DATA
-  ------------------------------------------------------------
-      0 - SUNSHINE DURATION RATIO
-      1 - SUNSHINE DURATION IN HOURS/DAY (default)
-      2 - INCIDENT GLOBAL RADIATION IN LY/DAY
-      3 - INCIDENT GLOBAL RADIATION IN MJ/M**2/DAY
-  ------------------------------------------------------------
-  Please enter choice: 3
+------------------------------------------------------------
+  IS - CONTROL PARAMETER FOR INSOLATION DATA
+------------------------------------------------------------
+  0 - SUNSHINE DURATION RATIO
+  1 - SUNSHINE DURATION IN HOURS/DAY (default)
+  2 - INCIDENT GLOBAL RADIATION IN LY/DAY
+  3 - INCIDENT GLOBAL RADIATION IN MJ/M**2/DAY
+------------------------------------------------------------
+Please enter choice: 3
 
-  ------------------------------------------------------------
-      IV - CONTROL PARAMETER FOR HUMIDITY DATA
-  ------------------------------------------------------------
-      0 - TD IS DEW POINT IN DEG.C (default)
-      1 - TD IS VAPOUR PRESSURE AT DEW POINT IN M
-      2 - TD IS RELATIVE HUMIDITY
-  ------------------------------------------------------------
-  Please enter choice: 0
+------------------------------------------------------------
+  IV - CONTROL PARAMETER FOR HUMIDITY DATA
+------------------------------------------------------------
+  0 - TD IS DEW POINT IN DEG.C (default)
+  1 - TD IS VAPOUR PRESSURE AT DEW POINT IN M
+  2 - TD IS RELATIVE HUMIDITY
+------------------------------------------------------------
+Please enter choice: 0
 
-  ------------------------------------------------------------
-      IP - CONTROL PARAMETER FOR STATION ALTITUDE
-  ------------------------------------------------------------
-      0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION IN (default)
-      1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL IN M
+------------------------------------------------------------
+  IP - CONTROL PARAMETER FOR STATION ALTITUDE
+------------------------------------------------------------
+  0 - AVERAGE ATMOSPHERIC PRESSURE AT STATION IN (default)
+  1 - ALTITUDE OF STATION ABOVE MEAN SEA LEVEL IN M
 
-  ------------------------------------------------------------
-  Please enter choice: 1
+------------------------------------------------------------
+Please enter choice: 1
 
-  ENTER LATITUDE IN DECIMAL DEGREES [dd.dddd]: 39.46
-  ENTER STATION ALTITUDE [m]: 1264
-  ENTER AVERAGE DEPTH OF LAKE [m]: 7
-  ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
+ENTER LATITUDE IN DECIMAL DEGREES [dd.dddd]: 39.46
+ENTER STATION ALTITUDE [m]: 1264
+ENTER AVERAGE DEPTH OF LAKE [m]: 7
+ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
 ```
 
 The results data is saved a file with the same name as the data CSV file but with a RES extension.  The overall format of the results file is very similar to the original output file, but the exact spacing of the values was changed.
 
 There is some error checking of the input data and parameters, but it is possible to enter inappropriate values.  Please refer to the original documentation for details about suitable inputs and the limitations of the model.
 
-## WREVAP References
+# References
+
+## WREVAP
 
 Morton, F.I., Ricard, F., Fogarasi, S., (1985). Operational estimates of areal evapotranspiration and lake evaporation – Program WREVAP. NHRI Paper No. 24. Inland Waters Directorate. Ottawa, Canada.
 
 Huntington, J.L., McEvoy, D. (2011). Climatological Estimates of Open Water Evaporation from Selected Truckee and Carson River Basin Water Bodies, California and Nevada.  Desert Research Publication 41254, 34pp.
 
-## Other Relevant References for CRLE
+## CRLE
 
 Morton, F.I. (1979). Climatological estimates of lake evaporation. Water Resources Research, 15:64-76.
 Morton, F.I. (1983a). Operational estimates of lake evaporation. Journal of Hydrology, 66:77-100.
