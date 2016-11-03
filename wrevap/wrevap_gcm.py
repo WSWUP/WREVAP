@@ -50,8 +50,10 @@ def WREVAP(input_path, data_path):
 
     # Initialize Parameters
     get_parameters()
+
     # Read in input data
     read_data_file()
+
     # CHECK INPUT SPECIFICATIONS AND DO A GENERAL INITIALIZATION
     initialize()
 

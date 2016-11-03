@@ -6,13 +6,7 @@ Python implementation of "Operational Estimates of Areal Evapotranspiration and 
 
 It is highly recommended that the user read the original WREVAP model documentation.  Most questions about the WREVAP model, parameters, or units, can be answered by referring to the original WREVAP documentation (Morton et al. 1985).  This version of the WREVAP model is functionally identical to the original WREVAP, however input format and options have been significantly improved for easy data entry and formatting.  All changes to the input data, parameters, and format are outlined below.  Where possible, the section number of the original documentation is listed in square brackets [].
 
-# Requirements
-
-Python 2.7 must be installed on the system.  Python 2.7 is installed by default with ArcGIS 10.1+, but it if needs to be installed, it can be downloaded from http://www.python.org/download/.  Make sure to select the installer that corresponds with your operating system.  The code was not developed or tested for Python 3.
-
-The Python numerical modeling module NumPy must also be installed.  NumPy is installed by default with ArcGIS 10.1+.  The NumPy installer can be downloaded from http://numpy.scipy.org/.  Make sure to select the NumPy installer that corresponds with your Python version and operating system (for example: numpy-1.10.0-win32-superpack-python2.7.exe for the default Python install from ArcGIS 10.0 on a windows machine).
-
-All of the following notes are assuming that the WREVAP script is being run on a computer running the Microsoft Windows XP operating system or newer.  The script should be able to execute on any computer that has Python and NumPy installed, but it was not tested on any older Windows or non-Windows machines.
+Note, text and variables in the scripts that are all upper case are copied directly from the original Fortran code.
 
 # Reproducibility
 
@@ -140,20 +134,37 @@ The format for these files is unchanged.  If no antecedent solar and waterborne 
 
 # Running The Model
 
-The WREVAP script can be run by either double clicking the script (which in windows will load a temporary command prompt) or calling the script directly from the command prompt.  Currently there is no GUI (graphical user interface) and all interaction with the script is the through the command prompt and the parameter and data files.
+The WREVAP script can be run by calling the script directly from the command prompt.  Currently there is no GUI (graphical user interface) and all interaction with the script is the through the command prompt and the parameter and data files.
 
-When calling the script from the command prompt, the path to the data CSV file can be passed as the first argument.  It if is not passed, the script will prompt the user to enter the path.  If only a file name is entered, the script will attempt to use the current working directory (typically the directory the script was called from).  The script will then look for a parameter INI file with the same name as the data CSV file.  If one is not found, the user is prompted to enter the parameter values.
+When calling the script from the command prompt, the path to the data CSV file must be passedcan be passed as the first argument.  If only a file name is entered, the script will attempt to use the current working directory (typically the directory the script was called from).  The script will then look for a parameter INI file with the same name as the data CSV file.  If one is not found, the user is prompted to enter the parameter values.
 
-The following are examples of how to run the script from a command prompt without an .INI file, assuming that the script and data file are located in the current working directory:
-
+The script can be run be either setting both the *--ini* and *--data* command line arguments:
 ```
-> python WREVAP.py --data example\lahontan.csv
+> python wrevap\wrevap.py --data example\lahontan.csv --ini example\lahontan.ini
 
 WREVAP - Python
+  Input file: D:\WREVAP\example\lahontan.ini
+  Data file:  D:\WREVAP\example\lahontan.csv
+
+The following WREVAP parameter INI file was found: D:\WREVAP\example\lahontan.ini
+
+Do you want to enter WREVAP parameters from this INI file [Y/n]?
+Please enter choice: Y
 ```
-Notes:
-+ The script will try loading lahontan.csv even if the file extension is not set
-+ Relative or full paths can be specified
+
+The script can also be run with only the *--data* parameter set, in which case user will be prompted to enter the input parameters (see below):
+```
+> python wrevap\wrevap.py --data example\lahontan.csv
+
+WREVAP - Python
+  Input file: None
+  Data file:  D:\WREVAP\example\lahontan.csv
+
+The WREVAP parameter INI file was not found
+Please enter WREVAP parameters manually
+
+Enter a site name:
+```
 
 The example below illustrates the user prompts for Lahontan reservoir, where the CRLE model is desired given inputs of TD, T, and S, and no heat storage estimates are available.
 
@@ -223,20 +234,19 @@ ENTER LATITUDE IN DECIMAL DEGREES [dd.dddd]: 39.46
 ENTER STATION ALTITUDE [m]: 1264
 ENTER AVERAGE DEPTH OF LAKE [m]: 7
 ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
-
-------------------------------------------------------------
-  ISUM - CONTROL PARAMETER FOR STATION SUMMARY
-------------------------------------------------------------
-  0 - TABULATION OF AVERAGED MONTHLY TOTALS IS NOT LISTED
-      (default)
-  1 - TABULATION OF AVERAGED MONTHLY TOTALS IS LISTED
-------------------------------------------------------------
-Please enter choice: 1
 ```
 
 The results data is saved a file with the same name as the data CSV file but with a RES extension.  The overall format of the results file is very similar to the original output file, but the exact spacing of the values was changed.
 
 There is some error checking of the input data and parameters, but it is possible to enter inappropriate values.  Please refer to the original documentation for details about suitable inputs and the limitations of the model.
+
+# Requirements
+
+Python 2.7 must be installed on the system.  Python 2.7 is installed by default with ArcGIS 10.1+, but if it needs to be installed, the best source is the [Anaconda](https://www.continuum.io/downloads) distribution and package manager.  Make sure to select the installer that corresponds with your operating system.  The code was not developed or tested for Python 3.
+
+The Python numerical modeling module [NumPy](http://www.numpy.org/) must also be installed.  NumPy is installed by default with ArcGIS 10.X or Anaconda Python distributions.
+
+All of the following notes are assuming that the WREVAP script is being run on a computer running the Microsoft Windows 7 operating system or newer.  The script should be able to execute on any computer that has Python and NumPy installed, but it was not tested on any older Windows or non-Windows machines.
 
 # References
 

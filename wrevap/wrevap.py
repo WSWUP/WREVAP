@@ -49,8 +49,10 @@ def WREVAP(input_path, data_path):
 
     # Initialize Parameters
     get_parameters()
+
     # Read in input data
     read_data_file()
+
     # CHECK INPUT SPECIFICATIONS AND DO A GENERAL INITIALIZATION
     initialize()
 
@@ -201,14 +203,9 @@ def get_parameters():
             elif user_input in ['N']:
                 ini_read_flag = False
                 break
-    elif paths.ini is None:
-        logging.info(
-            '\nThe WREVAP parameter INI file was not set' +
-            '\nPlease enter WREVAP parameters manually')
-        ini_exist_flag = False
     else:
         logging.info(
-            '\nThe WREVAP parameter INI file was not found' +
+            '\nThe WREVAP parameter INI file was not set or found' +
             '\nPlease enter WREVAP parameters manually')
         ini_exist_flag = False
 
