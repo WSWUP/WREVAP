@@ -7,12 +7,6 @@ Python implementation of the original Fortran model.
 
 It is highly recommended that the user read the original WREVAP model documentation.  Most questions about the WREVAP model, parameters, or units, can be answered by referring to the original WREVAP documentation (Morton et al. 1985).  This version of the WREVAP model is functionally identical to the original WREVAP, however input format and options have been significantly improved for easy data entry and formatting.  All changes to the input data, parameters, and format are outlined below.  Where possible, the section number of the original documentation is listed in square brackets [].
 
-Note, text and variables in the scripts that are all upper case are copied directly from the original Fortran code.
-
-# Reproducibility
-
-The new Python version of the model may not always generate outputs that are identical to the original Fortran model, however the differences are negligible.  The original Fortran version of the model used some 32-bit floating point values and math functions, while the Python version uses entirely 64 bit floating point values and functions, which are more precise than the original version.  Rounding errors in the original model result in negligible differences between the output data.
-
 # File Setup
 
 ## CSV data file
@@ -237,6 +231,14 @@ Python 2.7 must be installed on the system.  Python 2.7 is installed by default 
 The Python numerical modeling module [NumPy](http://www.numpy.org/) must also be installed.  NumPy is installed by default with ArcGIS 10.X or Anaconda Python distributions.
 
 All of the following notes are assuming that the WREVAP script is being run on a computer running the Microsoft Windows 7 operating system or newer.  The script should be able to execute on any computer that has Python and NumPy installed, but it was not tested on any older Windows or non-Windows machines.
+
+# Reproducibility
+
+The new Python version of the model may not always generate outputs that are identical to the original Fortran model, however the differences are negligible.  The original Fortran version of the model used some 32-bit floating point values and math functions, while the Python version uses entirely 64 bit floating point values and functions, which are more precise than the original version.  Rounding errors in the original model result in negligible differences between the output data.
+
+# Conversion from Fortran
+
+Upper case text and variables in the scripts are copied directly from the original Fortran code.
 
 # References
 

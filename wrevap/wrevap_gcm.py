@@ -1,5 +1,5 @@
 #--------------------------------
-# Name:         WREVAP_gcm.py
+# Name:         wrevap_gcm.py
 # Authors:      Charles Morton and Justin Huntington
 # Modified:     2016-11-02
 # Python:       2.7
@@ -59,30 +59,31 @@ def WREVAP(input_path, data_path):
 
     # Process data for each time period
     for i, dt_start in enumerate(data.DATE):
-        # SET UP THE DOY INFORMATION
-        doy_start = dt_start.timetuple().tm_yday
         dt_stop = dt_start + dt.timedelta(days=(data.LENGTH[i] - 1))
+        doy_start = dt_start.timetuple().tm_yday
         doy_stop = dt_stop.timetuple().tm_yday
-        doy_adjust = INIJUL(dt_start)
+        doy_adjust = adjust_doy(dt_start)
+
         # COMPUTE THE RADIUS VECTOR OF THE EARTH'S ORBIT(neta) AND
         # THE DECLINATION OF THE SUN(theta)
         neta, theta = compute_orbit(doy_start, doy_stop, doy_adjust)
+
         # CHECK RAW DATA AND IF NECESSARY CONVERT UNITS AND THEN,
         # COMPUTE THE ABSORBED GLOBAL RADIATION OR
         # THE SOLAR & WATER-BORNE HEAT INPUT(GW).
         compute_budget_1(i, neta, theta)
-        # DO THE FINAL CALCULATION AND LIST THE INPUTS AND THE
-        # RESULTS FOR EACH PERIOD.
-        if param.LK <= 1:
+
+        if param.LK in [0, 1]:
+            # DO THE FINAL CALCULATION AND LIST THE INPUTS AND THE
+            # RESULTS FOR EACH PERIOD.
             compute_budget_2(i)
-        # IF LAKE EVAPORATION IS BEING ESTIMATED, THE RESULTS ARE
-        # STORED FOR LATER USE.
-        elif param.LK >= 2:
+        elif param.LK in [2, 3]:
+            # IF LAKE EVAPORATION IS BEING ESTIMATED, THE RESULTS ARE
+            # STORED FOR LATER USE.
             TRANLK(i)
 
     # THE FOLLOWING SECTION DEALS WITH LAKE EVAPORATION MODEL
-    # WHEN LK = 2 OR 3
-    if param.LK >= 2:
+    if param.LK in [2, 3]:
         # READ THE 12 SOLAR & WATER-BORNE HEAT INPUT VALUES(TGW) OF THE
         # PRECEDING TIME PERIODS, OR COPY THE MOST RECENT 12 VALUES OF
         # TGW INTO THE PRECEDING PERIODS.
@@ -91,17 +92,19 @@ def WREVAP(input_path, data_path):
         if param.LK == 2:
             for i in xrange(12):
                 data.TGW[i] = data.TGW[i + 12]
+
         # CALCULATE THE AVAILABLE SOLAR & WATER-BORNE HEAT CALLING IT
         # TABLE TGL.
         compute_available_heat()
+
         # DO THE FINAL CALCULATION AND LIST THE INPUTS AND THE
         # RESULTS FOR EACH PERIOD.
         for i in xrange(param.NN):
             compute_budget_2(i)
+
         # WRITE THE 12 MOST RECENT VALUES OF TGW TO SOL FILE
         write_sol_file()
 
-    # Print output to results file
     print_output()
 
     # LIST THE MONTHLY TOTALS AVERAGED OVER 5 YEARS
@@ -113,14 +116,14 @@ def set_input_paths(input_path, data_path):
     """"""
     # For now, get workspace and name from data_path
     input_ws = os.path.dirname(data_path)
-    input_name, input_ext = os.path.splitext(os.path.basename(input_path))
+    input_name, input_ext = os.path.splitext(os.path.basename(data_path))
 
     paths.ini = input_path
     paths.csv = data_path
     paths.res = os.path.join(input_ws, input_name + '.RES')
     paths.tgw = os.path.join(input_ws, input_name + '.TGW')
     paths.sol = os.path.join(input_ws, input_name + '.SOL')
-    # DEADBEEF
+    # Write separate output file for GCM runs
     paths.out = os.path.join(input_ws, input_name + '.OUT')
 
 
@@ -214,10 +217,12 @@ def get_parameters():
         logging.error(
             '\nERROR: PHID paramter must be between -90 and +90')
         sys.exit()
+
     P = read_param('P', None, float, config)
     if not P or P < 0:
         logging.error("\nERROR: P paramter must be >= 0")
         sys.exit()
+
     LK = read_param('LK', None, float, config)
     check_param_in_list(LK, LK_list, 'LK')
     if LK == 0:
@@ -240,6 +245,7 @@ def get_parameters():
             logging.error(
                 '\nERROR: SALT paramter must be >= 0 when LK > 0')
             sys.exit()
+
     ISUM = read_param('ISUM', 0, int, config)
     IP = read_param('IP', 0, int, config)
     IS = read_param('IS', 1, int, config)
@@ -300,7 +306,7 @@ def read_data_file():
     data.TDW = [0.0] * param.NN
     data.TW = [0.0] * param.NN
     data.SW = [0.0] * param.NN
-    data.HADD = [0] * param.NN
+    data.HADD = [0.0] * param.NN
     data.PPT = [0.0] * param.NN
     logging.info('  {} data points in file\n'.format(param.NN))
 
@@ -310,22 +316,22 @@ def read_data_file():
             if name in dat_fields:
                 return dat_header[name]
         return None
-    YEAR_i = column_index(['YEAR'])
-    MONTH_i = column_index(['MONTH'])
-    DAY_i = column_index(['DAY', 'STARTDAY', 'START_DAY'])
-    DOY_i = column_index(['DOY', 'STARTDOY', 'START_DOY'])
-    LENGTH_i = column_index(['LENGTH'])
-    TD_i = column_index(['TD'])
-    T_i = column_index(['T'])
-    S_i = column_index(['S'])
-    HADD_i = column_index(['HADD'])
-    PPT_i = column_index(['PPT'])
+    year_i = column_index(['YEAR'])
+    month_i = column_index(['MONTH'])
+    day_i = column_index(['DAY', 'STARTDAY', 'START_DAY'])
+    doy_i = column_index(['DOY', 'STARTDOY', 'START_DOY'])
+    length_i = column_index(['LENGTH'])
+    td_i = column_index(['TD'])
+    t_i = column_index(['T'])
+    s_i = column_index(['S'])
+    hadd_i = column_index(['HADD'])
+    ppt_i = column_index(['PPT'])
 
     # Check date fields
-    if YEAR_i >= 0 and DOY_i >= 0 and LENGTH_i >= 0:
+    if year_i >= 0 and doy_i >= 0 and length_i >= 0:
         dt_doy_flag = True
         dt_format = '%Y_%j'
-    elif YEAR_i >= 0 and DAY_i >= 0 and DAY_i >= 0 and LENGTH_i >= 0:
+    elif year_i >= 0 and day_i >= 0 and day_i >= 0 and length_i >= 0:
         dt_doy_flag = False
         dt_format = '%Y_%m_%d'
     else:
@@ -333,37 +339,37 @@ def read_data_file():
         logging.error(
             '\nERROR: Data file is missing start date or length fields' +
             '\nERROR: YEAR/STARTDOY/LENGTH or YEAR/MONTH/STARTDAY/LENGTH\n')
-        raise SystemExit()
+        sys.exit()
 
     # Check data fields
-    if not (S_i and T_i and TD_i):
+    if not (s_i and t_i and td_i):
         logging.error(
             '\nERROR: Data file is missing data fields' +
             '\nERROR: TD, T, or S\n')
-        raise SystemExit()
+        sys.exit()
 
     # Read in data
     dat_list = [i.split(',') for i in dat_lines[data_line:]]
     # Process data for each time period
     for i, dat_line in enumerate(dat_list):
         # logging.debug('\n  {}'.format(dat_line))
-        year = int(dat_line[YEAR_i])
+        year = int(dat_line[year_i])
         if dt_doy_flag:
             dt_start = dt.datetime.strptime(
-                '{:04d}_{:03d}'.format(year, int(dat_line[DOY_i])),
+                '{}_{:03d}'.format(year, int(dat_line[doy_i])),
                 dt_format)
         else:
             dt_start = dt.datetime.strptime(
-                '{04d}_{:02d}_{:02d}'.format(
-                    year, int(dat_line[MONTH_i]), int(dat_line[DAY_i])),
+                '{}_{:02d}_{:02d}'.format(
+                    year, int(dat_line[month_i]), int(dat_line[day_i])),
                 dt_format)
         data.DATE[i] = dt_start
-        data.LENGTH[i] = int(dat_line[LENGTH_i])
-        data.TD[i] = float(dat_line[TD_i])
-        data.T[i] = float(dat_line[T_i])
-        data.S[i] = float(dat_line[S_i])
-        data.HADD[i] = float(dat_line[HADD_i]) if HADD_i >= 0 else 0
-        data.PPT[i] = float(dat_line[PPT_i]) if PPT_i >= 0 else 0
+        data.LENGTH[i] = int(dat_line[length_i])
+        data.TD[i] = float(dat_line[td_i])
+        data.T[i] = float(dat_line[t_i])
+        data.S[i] = float(dat_line[s_i])
+        data.HADD[i] = float(dat_line[hadd_i]) if hadd_i >= 0 else 0.0
+        data.PPT[i] = float(dat_line[ppt_i]) if ppt_i >= 0 else 0.0
 
 
 def initialize():
@@ -377,28 +383,30 @@ def initialize():
         P = 1013 * (1 - 0.0065 * P / 288) ** 5.256
     if P < 0:
         logging.error(
-            '\n  *** INPUT ERROR NUMBER = 23\n' +
+            '\n*** INPUT ERROR NUMBER = 23\n' +
             'Value of P should be greater than or equal to 0\n')
-        raise SystemExit()
+        sys.exit()
     param.P = P
+
     # DIFFERENT CONSTANTS ARE USED DEPENDING ON WHETHER THE AREAL
     # EVAPOTRANSPIRATION MODEL IS BEING USED(LK=0) OR THE WET SURFACE
     # EVAPORATION OR LAKE EVAPORATION MODELS ARE BEING USED(LK>0)
-    # CONSTANTS FOR THE AREAL EVAPOTRANSPIRATION MODELS
     if param.LK == 0:
+        # CONSTANTS FOR THE AREAL EVAPOTRANSPIRATION MODELS
         const.SB = 5.22 / 1E8
         const.AZZZ = (0.26 - 0.00012 * math.sqrt(P / 1013) * param.PPN *
                       (1 + abs(param.PHID) / 42 + (param.PHID / 42) ** 2))
         const.CONST2 = 1.20
         const.FZ = 28.0
         const.CONST1 = 14.0
-    # CONSTANTS FOR WET SURFACE AND LAKE EVAPORATION MODELS
     else:
+        # CONSTANTS FOR WET SURFACE AND LAKE EVAPORATION MODELS
         const.SB = 5.5 / 1E8
         const.AZZZ = 0.05
         const.CONST2 = 1.12
         const.FZ = 25.0
         const.CONST1 = 13.0
+
     # VARIABLES FOR MONTHLY MEANS ARE INITIALIZED
     # IF ISUM=0 , NO MONTHLY SUMMARY IS PRINTED AT THE END
     # IF ISUM=1 , TABLE OF MONTHLY MEANS IS PRINTED
@@ -434,6 +442,7 @@ def initialize():
         data.TGW = [0.0] * (param.NN + 12)
         data.TGL = [0.0] * param.NN
         data.GWT = [0.0] * param.NN
+
     # DEFINE TEMPERATURE DEPENDENT CONSTANTS
     # 0 - FOR TEMPERATURE GREATER THAN OR EQUAL TO 0 DEGREES CELSIUS.
     # 1 - FOR TEMPERATURE LESS THAN 0 DEGREES CELSIUS
@@ -442,11 +451,11 @@ def initialize():
     const.GAMMA = [(0.66 * P / 1013), ((0.66 * P / 1013) / 1.15)]
     const.FTZ = [(const.FZ * math.sqrt(1013 / P)),
                  ((const.FZ * math.sqrt(1013 / P)) * 1.15)]
+
     # DEFINE OTHER VALUES
     const.PI = math.pi
     const.CONV = math.pi / 180
     param.PHI = param.PHID * const.CONV
-    return
 
 
 def read_tgw_file():
@@ -461,16 +470,16 @@ def read_tgw_file():
             ('ERROR: The TGW file does not exist or ' +
              'could not be opened\n    ({})').format(paths.tgw))
         logging.error(
-            '   If running LK==3, try running LK==2 first\n' +
-            '   Then copy the data in the SOL file to the TGW file\n' +
-            '   See section 6.6 and 6.7 in NHRI Paper No. 24')
-        raise SystemExit()
+            '  If running LK==3, try running LK==2 first\n' +
+            '  Then copy the data in the SOL file to the TGW file\n' +
+            '  See section 6.6 and 6.7 in NHRI Paper No. 24')
+        sys.exit()
     tgw_data = [float(i) for i in tgw_f.readlines()]
     tgw_f.closed
 
     if len(tgw_data) != 13:
         logging.error('ERROR: There should be 13 values in the .TGW file')
-        raise SystemExit()
+        sys.exit()
     param.GLBGN = tgw_data.pop(0)
     # Values are reversed in file?
     # data.TGW[:12] = tgw_data[:]
@@ -480,15 +489,14 @@ def read_tgw_file():
 
 def write_sol_file():
     """"""
-    sol_f = open(paths.sol, 'w')
-    sol_f.write('{0:9.4f}\n'.format(param.GLEND))
-    # Values are reversed in file? (reverse sort then get last 12)
-    sol_f.write('\n'.join(map('{0:9.4f}'.format, data.TGW[::-1][:12])))
-    sol_f.closed
-    del sol_f
+    with open(paths.sol, 'w') as sol_f:
+        sol_f.write('{0:9.4f}\n'.format(param.GLEND))
+        # Values are reversed in file? (reverse sort then get last 12)
+        sol_f.write('\n'.join(map('{0:9.4f}'.format, data.TGW[::-1][:12])))
+        sol_f.closed
 
 
-def INIJUL(dt_start):
+def adjust_doy(dt_start):
     """JULIAN DAY ADJUSTMENT FOR LEAP YEARS"""
     if calendar.isleap(dt_start.year):
         doy_adjust = -0.5
@@ -496,7 +504,7 @@ def INIJUL(dt_start):
         doy_adjust = 0.5
     if dt_start.month <= 2:
         doy_adjust = 0.0
-    # logging.info('  DOY Adjust: {}'.format(doy_adjust))
+    # logging.debug('  DOY Adjust: {}'.format(doy_adjust))
     return doy_adjust
 
 
@@ -540,11 +548,11 @@ def compute_budget_1(i, neta, theta):
             '\n*** INPUT ERROR NUMBER = 5\n' +
             '  TD values should be > 0 when TD represents the ' +
             'vapour pressure at dew point or relative humidity\n')
-        raise SystemExit()
+        sys.exit()
     if S < 0:
         logging.error(
             '\n*** INPUT ERROR NUMBER = 6\n  S values should be >= 0\n')
-        raise SystemExit()
+        sys.exit()
 
     # CONVERT FAHRENHEIT TEMPERATURE INTO CELSIUS
     if param.IT != 0:
@@ -701,7 +709,7 @@ def TRANLK(i):
     THIS SUBROUTINE IS USED ONLY FOR LAKE EVAPORATION MODEL.
     ALL THESE TRANLK ARGUMENTS ARE STORE IN TABLES FOR LATER
     APPLICATION IN BUDGT2.  THE TABULATED NAMES ARE PREFIXED WITH LETTER
-    "T" AND FOLLOWED BY THE PREVIOUS NON-SUBSCRIPTED TRANLK ARGUMENTS.
+    'T' AND FOLLOWED BY THE PREVIOUS NON-SUBSCRIPTED TRANLK ARGUMENTS.
     """
     data.TDATE[i] = data.DATE[i]
     data.TLENGTH[i] = data.LENGTH[i]
@@ -721,13 +729,13 @@ def TRANLK(i):
 def compute_budget_2(i):
     """
     BUDGT2 CALCULATES THE:
-       POWER EQUIVALENT OF AREAL EVAPOTRANSPIRATION, LAKE-SIZE
-       WET SURFACE EVAPORATION OR LAKE EVAPORATION(ET),
-       POWER EQUIVALENT OF POTENTIAL EVAPOTRANSPIRATION,
-       PAN-SIZE WET SURFACE EVAPORATION OR POTENTIAL EVAPORATION(ETP),
-       NET RADIATION OR NET AVALAIBLE ENERGY WITH SOIL-PLANT
-       SURFACES, WET SURFACE OR LAKE SURFACE AT TEMPERATURE T(RT)
-       AND CALLS print_output TO LIST INPUTS AND RESULTS FOR EACH TIME PERIOD
+        POWER EQUIVALENT OF AREAL EVAPOTRANSPIRATION, LAKE-SIZE
+        WET SURFACE EVAPORATION OR LAKE EVAPORATION(ET),
+        POWER EQUIVALENT OF POTENTIAL EVAPOTRANSPIRATION,
+        PAN-SIZE WET SURFACE EVAPORATION OR POTENTIAL EVAPORATION(ETP),
+        NET RADIATION OR NET AVALAIBLE ENERGY WITH SOIL-PLANT
+        SURFACES, WET SURFACE OR LAKE SURFACE AT TEMPERATURE T(RT)
+        AND CALLS print_output TO LIST INPUTS AND RESULTS FOR EACH TIME PERIOD
     """
     if param.LK <= 1:
         DATE = data.DATE[i]
@@ -753,12 +761,12 @@ def compute_budget_2(i):
     ATM = 10 * (VD / V - S - 0.42)
     if ATM < 0:
         ATM = 0.0
-    if ATM > 1:
+    elif ATM > 1:
         ATM = 1.0
 
     # PROPORTIONAL INCREASE IN ATMOSPHERIC RADIATION DUE TO CLOUDS (RHO)
     RHO = (0.18 * 1013 / param.P *
-           (ATM * math.sqrt((1 - S)) + (1 - ATM) * (1 - S) ** 2))
+           (ATM * math.sqrt(1 - S) + (1 - ATM) * (1 - S) ** 2))
 
     # NET LONG-WAVE RADIATION LOSS WITH SURFACE AT T (B)
     AK = T + 273
@@ -779,8 +787,9 @@ def compute_budget_2(i):
     RTC = RT
     if RTC < 0:
         RTC = 0.0
-    ZETA = (1. / (0.28 * (1 + VD / V) +
-                  const.FZ / 28. * DELTA * RTC / const.GAMMA[J] / EE))
+    ZETA = (
+        0.28 * (1 + VD / V) +
+        const.FZ / 28. * DELTA * RTC / const.GAMMA[J] / EE) ** -1
     if ZETA < 1:
         ZETA = 1.0
 
@@ -917,7 +926,8 @@ def compute_available_heat():
 def print_output():
     """"""
     res_f = open(paths.res, 'w')
-    # DEADBEEF
+
+    # Write output to separate OUT file for CRLE runs
     if param.LK > 1:
         out_f = open(paths.out, 'w')
 
@@ -990,12 +1000,11 @@ def print_output():
         LINE2_end = '{0:>10s}{1:>10s}{2:>10s}{3:>10s}'.format(
             'RAD.', 'POTENT.', 'LAKE', 'GW(W/M*M)')
         res_f.write('{}{}{}\n'.format(LINE2_start, LINE2_mid, LINE2_end))
-        # DEADBEEF
+        # Write separate output file for GCM runs
         LINE2_end = [
             'TD_C', 'T_C', 'RS_MJ_M2_D', 'HADD', 'NET_RAD_MM',
             'ET_POT_MM', 'ET_LAKE_MM', 'GW_W_M2', 'PPT_MM']
         out_f.write(','.join(LINE2_start.split() + LINE2_end) + '\n')
-    del LINE2_start, LINE2_mid, LINE2_end, LINE2
 
     for i, dt_start in enumerate(data.DATE):
         MONTH = '{0:>10s}'.format(calendar.month_abbr[dt_start.month].upper())
@@ -1033,16 +1042,11 @@ def print_output():
             res_f.write('{}\n'.format(''.join([
                 YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
                 RTMM, ETPMM, ETMM, GW])))
-            # DEADBEEF
+            # Write separate output file for GCM runs
             PPT = '{0:10.2f}'.format(data.PPT[i])
             out_f.write(','.join([
                 YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
                 RTMM, ETPMM, ETMM, GW, PPT]).replace(' ', '') + '\n')
-            del PPT
-            del HADD, GW
-        del YEAR, MONTH, DAY, LENGTH, SW
-        del RTMM, ETPMM, ETMM
-        del TDW, TW
 
     if param.LK >= 2:
         res_f.write(
@@ -1050,7 +1054,7 @@ def print_output():
                 param.GLBGN, param.GLEND, ' '))
 
     res_f.close()
-    return
+    return True
 
 
 def print_monthly_averages():
