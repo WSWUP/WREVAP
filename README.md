@@ -1,6 +1,7 @@
 # WREVAP
 
-Python implementation of "Operational Estimates of Areal Evapotranspiration and Lake Evaporation - Program WREVAP" code
+Operational Estimates of Areal Evapotranspiration and Lake Evaporation - Program WREVAP
+Python implementation of the original Fortran model.
 
 # Original Documentation
 
@@ -10,7 +11,7 @@ Note, text and variables in the scripts that are all upper case are copied direc
 
 # Reproducibility
 
-The new Python version of the model may not always generate outputs that are identical to the original model, however differences are negligible.  The original fortran version of the model used some 32-bit floating point values and math functions, while the Python version uses entirely 64 bit floating point values and functions, which are more precise than the original version.  Rounding errors in the original model result in negligible differences between the output data.
+The new Python version of the model may not always generate outputs that are identical to the original Fortran model, however the differences are negligible.  The original Fortran version of the model used some 32-bit floating point values and math functions, while the Python version uses entirely 64 bit floating point values and functions, which are more precise than the original version.  Rounding errors in the original model result in negligible differences between the output data.
 
 # File Setup
 
@@ -27,7 +28,7 @@ The units for the data are specified through the script interface or a separate 
 
 ## Example Input
 
-The following is the CSV file for LAHONTAN reservoir, Nevada, shown as a table.  Details on the source of the input data for Lahontan reservoir can be found in Huntington and McEvoy (2011).
+The following is a sample of the example CSV data file for Lahontan reservoir, Nevada.  Details on the source of the input data for Lahontan reservoir can be found in Huntington and McEvoy (2011) in the docs.
 
 ```
 LAHONTAN,,,,,,
@@ -60,7 +61,7 @@ YEAR,MONTH,STARTDAY,LENGTH,TD,T,S
 
 ## INI Parameter File
 
-The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not detected, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  # indicate commented lines for information only; comments could be removed to make the input file significantly shorter in length.
+The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CSV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not detected, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  # indicate commented lines for information only; comments could be removed or excluded to make the input file significantly shorter in length.
 
 ```
 # WREVAP INPUTS FILE
@@ -129,16 +130,14 @@ IP = 1
 ```
 
 ## TGW/SOL available water and solar energy files
-The format for these files is unchanged.  If no antecedent solar and waterborne energy inputs are available, the CRLE with LK=2 must be run first.  The .SOL file must be copied and renamed .TGW, and the CRLE must be run with LK=3.  Refer to the documentation on Record F [6.6] of File Tape 2 and Record G [6.7] of File Tape 3 for more information.
 
+The format for these files is unchanged.  If no antecedent solar and waterborne energy inputs are available, the CRLE with LK=2 must be run first.  The .SOL file must be copied and renamed .TGW, and the CRLE must be run with LK=3.  Refer to the documentation on Record F [6.6] of File Tape 2 and Record G [6.7] of File Tape 3 for more information.
 
 # Running The Model
 
 The WREVAP script can be run by calling the script directly from the command prompt.  Currently there is no GUI (graphical user interface) and all interaction with the script is the through the command prompt and the parameter and data files.
 
-When calling the script from the command prompt, the path to the data CSV file must be passedcan be passed as the first argument.  If only a file name is entered, the script will attempt to use the current working directory (typically the directory the script was called from).  The script will then look for a parameter INI file with the same name as the data CSV file.  If one is not found, the user is prompted to enter the parameter values.
-
-The script can be run be either setting both the *--ini* and *--data* command line arguments:
+The script can be run be either setting both the **--ini** and **--data** command line arguments:
 ```
 > python wrevap\wrevap.py --data example\lahontan.csv --ini example\lahontan.ini
 
@@ -152,7 +151,7 @@ Do you want to enter WREVAP parameters from this INI file [Y/n]?
 Please enter choice: Y
 ```
 
-The script can also be run with only the *--data* parameter set, in which case user will be prompted to enter the input parameters (see below):
+The script can also be run with only the **--data** parameter set, in which case user will be prompted to enter the input parameters (see below):
 ```
 > python wrevap\wrevap.py --data example\lahontan.csv
 
@@ -163,21 +162,12 @@ WREVAP - Python
 The WREVAP parameter INI file was not found
 Please enter WREVAP parameters manually
 
-Enter a site name:
+Enter a site name: Lahontan
 ```
 
 The example below illustrates the user prompts for Lahontan reservoir, where the CRLE model is desired given inputs of TD, T, and S, and no heat storage estimates are available.
 
 ```
-WREVAP - Python
-  Input file: None
-  Data file: D:\WREVAP\example\lahontan.csv
-
-The WREVAP parameter INI file was not found
-Please enter WREVAP parameters manually
-
-Enter a site name: Lahontan
-
 ------------------------------------------------------------
   PARAMETER LK - MODEL OPTION
 ------------------------------------------------------------
@@ -259,8 +249,12 @@ Huntington, J.L., McEvoy, D. (2011). Climatological Estimates of Open Water Evap
 ## CRLE
 
 Morton, F.I. (1979). Climatological estimates of lake evaporation. Water Resources Research, 15:64-76.
+
 Morton, F.I. (1983a). Operational estimates of lake evaporation. Journal of Hydrology, 66:77-100.
+
 Morton, F.I. (1983b). Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, 66:1–76.
+
 Morton, F.I. (1986). Practical Estimates of Lake Evaporation. Journal of Climate and Applied Meteorology, 25(3):371-387.
+
 Morton, F.I. (1994). Evaporation research – A critical review and its lessons for the environmental sciences. Critical Reviews in Environmental Science Technology 24(3):237-280.
 
