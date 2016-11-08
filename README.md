@@ -1,6 +1,6 @@
 # WREVAP
 
-Operational Estimates of Areal Evapotranspiration and Lake Evaporation - Program WREVAP
+Operational Estimates of Areal Evapotranspiration and Lake Evaporation - Program WREVAP  
 Python implementation of the original Fortran model.
 
 # Original Documentation
@@ -13,7 +13,7 @@ It is highly recommended that the user read the original WREVAP model documentat
 
 The only file/data required to run the WREVAP model is a CSV (comma separated value) file of the time period starting date, temperature (T), humidity (TD), and insolation (S) (i.e. solar radiation) data.  The waterborne energy input to the lake (HADD) could also be included in this file, but it is not a required field, and later computed if not input.  For each entry, the starting date must be specified either by listing the YEAR, MONTH, DAY (of month) or the YEAR and DOY (day of year).  It is also necessary to include the LENGTH of the time period.  This format is similar to Record E [6.5] of File Tape 1 (the .DAT file) in the original WREVAP model where the T, TD, and S are listed along with the start date.
 
-The script will only read data below the field names (YEAR, LENGTH, T, TD, S) in the CSV data file, so additional metadata can be stored in the header of the file.  In the following example, the site name is included in the file, but it will not be read.  In the original model, the C1, C2, & C3 fields (Record D [6.4] and E [6.5] of File Tape 1,) could be used to specify whether a T, TD, or S value were observed or estimated.  These values were not used by the model and were removed from this version.  Finally, the fields can be arranged in any order, but the field names must be capitalized and spelled exactly.
+The script will only read data below the field names (YEAR, LENGTH, T, TD, S) in the CSV data file, so additional metadata can be stored in the header of the file.  In the following example, the site name is included in the file, but it will not be read.  In the original model, the C1, C2, & C3 fields (Record D [6.4] and E [6.5] of File Tape 1) could be used to specify whether a T, TD, or S value were observed or estimated.  These values were not used by the model and were removed from this version.  Finally, the fields can be arranged in any order, but the field names must be capitalized and spelled exactly.
 
 ## Units
 
@@ -22,7 +22,7 @@ The units for the data are specified through the script interface or a separate 
 
 ## Example Input
 
-The following is a sample of the example CSV data file for Lahontan reservoir, Nevada.  Details on the source of the input data for Lahontan reservoir can be found in Huntington and McEvoy (2011) in the docs.
+The following is a sample of the example CSV data file for Lahontan reservoir, Nevada.  Details on the source of the input data for Lahontan reservoir can be found in [Huntington and McEvoy (2011)](docs/Huntington_and_McEvoy_2011.pdf).
 
 ```
 LAHONTAN,,,,,,
@@ -55,7 +55,7 @@ YEAR,MONTH,STARTDAY,LENGTH,TD,T,S
 
 ## INI Parameter File
 
-The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CSV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not detected, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  # indicate commented lines for information only; comments could be removed or excluded to make the input file significantly shorter in length.
+The model parameter values can be set using a parameter INI file or through the script command prompt.  This parameter file is functionally equivalent to Records A [6.1] and B [6.2] of File Tape 1 (the .PAR file).  Record C is not included in this file since the date and time period information is included in the data CSV file.  The script will read the model parameter values from a file if it has the same name as the data file but with an “.INI” extension (for example, sample1.csv -> sample1.ini).  If an INI parameter file is not set, the script will prompt the user to enter the necessary parameter values and then offer to save the values into a new INI file.  This is the easiest way to get a properly formatted (and commented) parameter file.  To build a parameter file from scratch, the following values need to be specified in an INI file with the same name as the data file.  The first non-commented line of the INI file must be: [INPUTS].  All other values can be listed in any order after this first line.  Refer to the original documentation for the description, units, and suitable values for each of the parameters.  # indicate commented lines for information only; comments could be removed or excluded to make the input file significantly shorter in length.
 
 ```
 # WREVAP INPUTS FILE
@@ -220,7 +220,7 @@ ENTER AVERAGE DEPTH OF LAKE [m]: 7
 ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
 ```
 
-The results data is saved a file with the same name as the data CSV file but with a RES extension.  The overall format of the results file is very similar to the original output file, but the exact spacing of the values was changed.
+The results data is saved to a file with the same name as the data CSV file but with an RES extension.  The overall format of the results file is very similar to the original output file, but the exact spacing of the values was changed.
 
 There is some error checking of the input data and parameters, but it is possible to enter inappropriate values.  Please refer to the original documentation for details about suitable inputs and the limitations of the model.
 
@@ -242,21 +242,23 @@ Upper case text and variables in the scripts are copied directly from the origin
 
 # References
 
+PDFs for selected references are available in the docs folder.
+
 ## WREVAP
 
-Morton, F.I., Ricard, F., Fogarasi, S., (1985). Operational estimates of areal evapotranspiration and lake evaporation – Program WREVAP. NHRI Paper No. 24. Inland Waters Directorate. Ottawa, Canada.
+[Morton, F.I., Ricard, F., and Fogarasi, S. (1985). Operational estimates of areal evapotranspiration and lake evaporation – Program WREVAP. NHRI Paper No. 24. Inland Waters Directorate. Ottawa, Canada.](docs/WREVAP_documentation_and_appendix.pdf)
 
-Huntington, J.L., McEvoy, D. (2011). Climatological Estimates of Open Water Evaporation from Selected Truckee and Carson River Basin Water Bodies, California and Nevada.  Desert Research Publication 41254, 34pp.
+[Huntington, J.L. and McEvoy, D. (2011). Climatological Estimates of Open Water Evaporation from Selected Truckee and Carson River Basin Water Bodies, California and Nevada. Desert Research Publication 41254, 34pp.](docs/Huntington_and_McEvoy_2011.pdf)
 
 ## CRLE
 
-Morton, F.I. (1979). Climatological estimates of lake evaporation. Water Resources Research, 15:64-76.
+[Morton, F.I. (1979). Climatological estimates of lake evaporation. Water Resources Research, 15:64-76.](docs/Morton_1979.pdf)
 
-Morton, F.I. (1983a). Operational estimates of lake evaporation. Journal of Hydrology, 66:77-100.
+[Morton, F.I. (1983a). Operational estimates of lake evaporation. Journal of Hydrology, 66:77-100.](docs/Morton_1983a.pdf)
 
-Morton, F.I. (1983b). Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, 66:1–76.
+[Morton, F.I. (1983b). Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, 66:1–76.](docs/Morton_1983b.pdf)
 
-Morton, F.I. (1986). Practical Estimates of Lake Evaporation. Journal of Climate and Applied Meteorology, 25(3):371-387.
+[Morton, F.I. (1986). Practical Estimates of Lake Evaporation. Journal of Climate and Applied Meteorology, 25(3):371-387.](docs/Morton_1986.pdf)
 
-Morton, F.I. (1994). Evaporation research – A critical review and its lessons for the environmental sciences. Critical Reviews in Environmental Science Technology 24(3):237-280.
+Morton, F.I. (1994). Evaporation research – A critical review and its lessons for the environmental sciences. Critical Reviews in Environmental Science Technology, 24(3):237-280.
 
