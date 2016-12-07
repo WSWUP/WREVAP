@@ -1,1 +1,0 @@
-copy lahontan.RES lahontan_tsrd_csf.out
