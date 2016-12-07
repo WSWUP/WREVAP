@@ -14,13 +14,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 
-
 def plot_gcm_wrevap(workspace):
     """Plot WREVAP data for each reservoir and GCM input data set"""
     logging.info('\nPlotting GCM WREVAP')
 
     # Output folder
-    wrevap_ws = r'Z:\USBR_Ag_Demands_Project\reservoir_evap\WREVAP_GCM'
+
+    wrevap_ws = 'C:\\fieldProjects\KlamathBasin\data\openwaterevap\data'
+    # wrevap_ws = '../data'
 
     year_range = (1950, 2099)
 
@@ -33,6 +34,7 @@ def plot_gcm_wrevap(workspace):
     #     'Upper_Klamath']
 
     # WREVAP output CSV fields
+    
     year_field = 'YEAR'
     month_field = 'MONTH'
     length_field = 'LENGTH'
@@ -44,6 +46,7 @@ def plot_gcm_wrevap(workspace):
     ppt_field = 'PPT_MM'
 
     # Subset ranges
+    
     subset_dict = dict()
     subset_dict['American_Falls'] = (1992, 2011)
     subset_dict['Boysen'] = (1999, 2010)
@@ -59,21 +62,23 @@ def plot_gcm_wrevap(workspace):
     subset_dict['Upper_Klamath'] = (2000, 2011)
 
     # subfolder where WREVAP GCM output is stored
+
     output_folder_name = 'output_data'
 
     # Subfolder where WREVAP GCM plots are stored
+
     plots_folder_name = 'plots'
 
     # GIJ (calculated from Thornton Running is in MJ/m^2/day)
     # Correction factor of 11.574 will convert output W/m^2
+
     rs_correction_factor = 11.574
 
     # Overwrite existing files
+
     overwrite_flag = True
 
-    #
     plot_si_units = False
-
 
     # Build plots folder
     # plots_ws = os.path.join(wrevap_ws, plots_folder_name)
@@ -86,23 +91,29 @@ def plot_gcm_wrevap(workspace):
     year_index = np.arange(year_range[0], year_range[1] + 1)
 
     # Process each sub folder in wrevap_ws
+
     res_name_list = os.listdir(wrevap_ws)
     for res_name in res_name_list:
+
         # Reservoir folder must already exist
         if not os.path.isdir(res_name):
             continue
+
         # Process target reservoirs
+
         if res_list and res_name not in res_list:
             continue
         logging.info('{}'.format(res_name))
         res_ws = os.path.join(wrevap_ws, res_name)
 
         # Check output_data folder
+
         csv_ws = os.path.join(res_ws, output_folder_name)
         if not os.path.isdir(csv_ws):
             continue
 
         # Build plots folder
+
         plots_ws = os.path.join(res_ws, plots_folder_name)
         # if os.path.isdir(plots_ws) and overwrite_flag:
         #     for item in os.listdir(plots_ws):
@@ -112,6 +123,7 @@ def plot_gcm_wrevap(workspace):
             os.mkdir(plots_ws)
 
         # Pre build list of output files
+
         csv_list = []
         for csv_name in os.listdir(csv_ws):
             csv_path = os.path.join(csv_ws, csv_name)
@@ -122,6 +134,7 @@ def plot_gcm_wrevap(workspace):
             csv_list.append([csv_name, csv_path])
 
         # Prebuild arrays
+
         year_shape = (len(csv_list), len(year_index))
         yearly_length_array = np.zeros(year_shape)
         yearly_tmean_array = np.zeros(year_shape)
@@ -134,6 +147,7 @@ def plot_gcm_wrevap(workspace):
         del year_shape
 
         # Process each file in output_data folder
+
         for csv_i, (csv_name, csv_path) in enumerate(csv_list):
             logging.info('  {}'.format(csv_name))
 
@@ -156,17 +170,21 @@ def plot_gcm_wrevap(workspace):
             monthly_ppt_array = wrevap_array[ppt_field]
 
             # Convert RS from MJ/m^2/day to W/m^2
+
             monthly_rs_array *= rs_correction_factor
+
             # np.times(
             #     monthly_rs_array, rs_correction_factor,
             #     out=monthly_rs_array)
 
             # Yearly means need to be weighted by the number of days in the month
+
             monthly_tmean_array *= monthly_length_array
             monthly_tdew_array *= monthly_length_array
             monthly_rs_array *= monthly_length_array
 
             # Calculate mean annual ET
+
             yearly_length_array = ndimage.sum(
                 monthly_length_array, labels=year_array, index=year_index)
             yearly_tmean_array[csv_i, :] = ndimage.sum(
@@ -188,11 +206,13 @@ def plot_gcm_wrevap(workspace):
             #     yearly_et_lake_array[csv_i, :] - yearly_ppt_array[csv_i, :])
 
             # Yearly means need to be weighted by the number of days in the month
+
             yearly_tmean_array[csv_i, :] /= yearly_length_array
             yearly_tdew_array[csv_i, :] /= yearly_length_array
             yearly_rs_array[csv_i, :] /= yearly_length_array
 
             # Cleanup
+
             del wrevap_array, month_array,
             del yearly_length_array, monthly_length_array
             del monthly_tmean_array
@@ -208,9 +228,11 @@ def plot_gcm_wrevap(workspace):
         # yearly_rs_array /= yearly_length_array
 
         # Net ET (ET - PPT)
+
         yearly_et_net_array = yearly_et_lake_array - yearly_ppt_array
 
         # Calculate Medians
+
         median_tmean_array = np.median(yearly_tmean_array, axis=0)
         median_tdew_array = np.median(yearly_tdew_array, axis=0)
         median_rs_array = np.median(yearly_rs_array, axis=0)
@@ -220,6 +242,7 @@ def plot_gcm_wrevap(workspace):
         median_et_net_array = np.median(yearly_et_net_array, axis=0)
 
         # Save yearly medians
+
         median_header_str = 'YEAR,TMEAN,TDEW,RS,ET_LAKE,ET_POT,PPT,ET_NET'
         median_fmt_str = '%d,%f,%f,%f,%f,%f,%f,%f'
         median_path = os.path.join(
@@ -238,6 +261,7 @@ def plot_gcm_wrevap(workspace):
                 comments='', fmt=median_fmt_str)
 
         # Save yearly medians subsets
+
         if subset_dict:
             # subset_range = subset_dict[res_name]
             subset_path = os.path.join(
@@ -264,6 +288,7 @@ def plot_gcm_wrevap(workspace):
                 del subset_mask
 
         # Input data is in SI units
+
         if not plot_si_units:
             yearly_tmean_array = 1.8 * yearly_tmean_array + 32
             median_tmean_array = 1.8 * median_tmean_array + 32
@@ -281,6 +306,7 @@ def plot_gcm_wrevap(workspace):
             median_et_net_array /= 25.4
 
         # Plot Mean Temperature
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_tmean.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -305,6 +331,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Dew Point
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_tdew.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -329,6 +356,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Thornton-Running Solar Radiation
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_rs.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -353,6 +381,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Lake ET
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_et_lake.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -377,6 +406,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Potential ET
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_et_pot.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -401,6 +431,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Precipitation
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_ppt.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -425,6 +456,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Plot Net ET (ET-PPT)
+
         plot_path = os.path.join(
             plots_ws, res_name.lower() + '_et_net.png')
         if os.path.isfile(plot_path) and overwrite_flag:
@@ -449,6 +481,7 @@ def plot_gcm_wrevap(workspace):
             plt.close()
 
         # Cleanup
+
         del plot_path
         del yearly_tmean_array
         del yearly_tdew_array
@@ -459,16 +492,13 @@ def plot_gcm_wrevap(workspace):
         del yearly_et_net_array
         del res_ws, csv_ws, csv_list
 
-
 if __name__ == '__main__':
     workspace = os.getcwd()
-
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(level = logging.INFO, format = '%(message)s')
     logging.info('\n{}'.format('#' * 80))
     log_f = '{:<20s} {}'
     logging.info(log_f.format(
         'Run Time Stamp:', dt.datetime.now().isoformat(' ')))
     logging.info(log_f.format('Current Directory:', workspace))
     logging.info(log_f.format('Script:', os.path.basename(sys.argv[0])))
-
     plot_gcm_wrevap(workspace)

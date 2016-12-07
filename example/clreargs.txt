@@ -1,0 +1,29 @@
+# do single trace single station clre run
+
+# constant average reservoir depth
+
+python ..\wrevap\wrevap.py -i lahontan.ini --data lahontan.csv
+
+# variable reservoir depth embedded in main data file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_eclre.ini --data lahontan_tsrd_eclre.csv
+
+# SF P variable reservoir depth in embedded file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_esfp.ini --data lahontan_tsrd_eclre.csv
+
+# SF P variable reservoir depth in separate data file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_sfp.ini --data lahontan.csv
+
+# PF S.P column slot format variable reservoir depth in separate data file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_csf.ini --data lahontan.csv
+
+# PF S.P rdb format variable reservoir depth in separate data file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_rdb.ini --data lahontan.csv
+
+# PF S.P workbook format variable reservoir depth in separate data file
+
+python ..\wrevap\wrevap.py -i lahontan_tsrd_xls.ini --data lahontan.csv
