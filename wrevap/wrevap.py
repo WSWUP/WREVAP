@@ -142,6 +142,10 @@ def set_input_paths(input_path, data_path):
     paths.res = os.path.join(input_ws, input_name + '.RES')
     paths.tgw = os.path.join(input_ws, input_name + '.TGW')
     paths.sol = os.path.join(input_ws, input_name + '.SOL')
+    
+    # csv output
+    
+    paths.out = os.path.join(input_ws, input_name + '.OUT')
 
 def get_value_from_range(v_type = float, prompt = 'Please enter choice: ',
                          v_min = float('-inf'), v_max = float(' +inf')):
@@ -189,7 +193,7 @@ def check_param_in_list(p_value, p_list, p_name):
     """"""
     if p_value not in p_list:
         logging.error(
-            '\nERROR: {} paramter must be set to {}'.format(
+            '\nERROR: {} parameter must be set to {}'.format(
                 p_name, ', '.join(['{}'.format(i) for i in p_list])))
         sys.exit()
 
@@ -239,6 +243,7 @@ def get_parameters():
 
         # config = ConfigParser.SafeConfigParser()
         # SafeConfigParser does not like '%s' specifications (have to use '%%s')
+        
         config = ConfigParser.ConfigParser()
         try:
             config.readfp(open(paths.ini))
@@ -253,7 +258,7 @@ def get_parameters():
         except ConfigParser.NoSectionError:
             logging.error((
                 '\nERROR: {}\n' +
-                '  Paramter INI file is missing a section line\n' +
+                '  Parameter INI file is missing a section line\n' +
                 '  First data line in file needs to be: [INPUTS]\n' +
                 '  Try removing INI file and rebuilding it\n').format(
                     paths.ini))
@@ -294,18 +299,18 @@ def get_parameters():
         PHID = read_param('PHID', None, float, config)
         if not (-90 <= PHID <= 90):
             logging.error(
-                '\nERROR: PHID paramter must be between -90 and +90')
+                '\nERROR: PHID parameter must be between -90 and +90')
             sys.exit()
         P = read_param('P', None, float, config)
         if not P or P < 0:
-            logging.error('\nERROR: P paramter must be >= 0')
+            logging.error('\nERROR: P parameter must be >= 0')
             sys.exit()
         LK = read_param('LK', None, float, config)
         check_param_in_list(LK, LK_list, 'LK')
         if LK == 0:
             PPN = read_param('PPN', None, float, config)
             if not PPN or PPN < 0:
-                logging.error('\nERROR: PPN paramter must be >= 0 when LK==0')
+                logging.error('\nERROR: PPN parameter must be >= 0 when LK==0')
                 sys.exit()
             RDM = 0
             RDU = 0
@@ -385,11 +390,11 @@ def get_parameters():
             SALT = read_param('SALT', None, float, config)
             if not DA or DA <= 0:
                 logging.error(
-                    '\nERROR: DA paramter must be > 0 when LK > 0')
+                    '\nERROR: DA parameter must be > 0 when LK > 0')
                 sys.exit()
             elif not SALT or SALT < 0:
                 logging.error(
-                    '\nERROR: SALT paramter must be >= 0 when LK > 0')
+                    '\nERROR: SALT parameter must be >= 0 when LK > 0')
                 sys.exit()
         ISUM = read_param('ISUM', 0, int, config)
         IP = read_param('IP', 0, int, config)
@@ -456,7 +461,7 @@ def get_parameters():
             '  IV - CONTROL PARAMETER FOR HUMIDITY DATA\n{}\n' +
             '  0 - TD IS DEW POINT IN DEG.{} (default)\n' +
             '  1 - TD IS VAPOUR PRESSURE AT DEW POINT IN M\n' +
-            '  2 - TD IS RELATIVE HUMIDITY\n{}').format(
+            '  2 - TD IS DECIMAL RELATIVE HUMIDITY\n{}').format(
                 dash_line, dash_line, T_units, dash_line))
         IV = get_int_from_list(IV_list, 0)
 
@@ -690,6 +695,7 @@ def read_input_tsdata():
     data.TW = [0.0] * param.NN
     data.SW = [0.0] * param.NN
     data.HADD = [0.0] * param.NN
+    data.PPT = [0.0] * param.NN
     data.reservoir_depth = [param.DA] * param.NN
     logging.info('  {} data points in file\n'.format(param.NN))
 
@@ -709,6 +715,7 @@ def read_input_tsdata():
     t_i = column_index(['T'])
     s_i = column_index(['S'])
     hadd_i = column_index(['HADD'])
+    ppt_i = column_index(['PPT'])
     if param.RDM == 1:
         rd_i = column_index(['RD'])
     else:
@@ -774,6 +781,8 @@ def read_input_tsdata():
             else:
                 logging.error('\nERROR: Unable to find reservoir depth column')
                 sys.exit()
+        if ppt_i >= 0:
+            data.PPT[i] = float(dat_line[ppt_i])
     param.start_dt = dt.datetime(data.DATE[0].year, data.DATE[0].month, 1, 0, 0, 0)
     param.end_dt = data.DATE[len(data.DATE) - 1]
     if param.RDM == 2:
@@ -1381,6 +1390,12 @@ def compute_available_heat():
 def print_output():
     """"""
     res_f = open(paths.res, 'w')
+
+    # Write output to separate OUT file for CRLE runs
+
+    if param.LK > 1:
+        out_f = open(paths.out, 'w')
+
     SITE = '{0:20s}'.format(param.SITE)
     PHID = '{0:>6s}{1:<7.2f}'.format(' PHID= ', param.PHID)
     if param.IP == 0:
@@ -1413,7 +1428,6 @@ def print_output():
         LINE2[0] = 'VD'
     elif param.IV == 2:
         LINE2[0] = 'RELH'
-
     if param.IT == 0:
         LINE2[1] = 'T'
     elif param.IT == 1:
@@ -1445,10 +1459,19 @@ def print_output():
         LINE2_end = '{0:>10s}{1:>10s}{2:>10s}{3:>10s}'.format(
             'RAD.', 'POTENT.', 'LAKE', 'GW(W/M*M)')
         res_f.write('{}{}{}\n'.format(LINE2_start, LINE2_mid, LINE2_end))
+        
+        # Write separate output file for GCM runs
+        
+        LINE2_end = [
+            'TD_C', 'T_C', 'RS_MJ_M2_D', 'HADD', 'NET_RAD_MM',
+            'ET_POT_MM', 'ET_LAKE_MM', 'GW_W_M2', 'PPT_MM']
+        out_f.write(','.join(LINE2_start.split() + LINE2_end) + '\n')
+
     for i, dt_start in enumerate(data.DATE):
         MONTH = '{0:>10s}'.format(calendar.month_abbr[dt_start.month].upper())
         DAY = '{0:10d}'.format(dt_start.day)
         LENGTH = '{0:10d}'.format(data.LENGTH[i])
+
         if dt_start.year < 9900:
             YEAR = '{0:>10d}'.format(dt_start.year)
         else:
@@ -1479,6 +1502,13 @@ def print_output():
             res_f.write('{}\n'.format(''.join([
                 YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
                 RTMM, ETPMM, ETMM, GW])))
+                
+            # Write separate output file for GCM runs
+            
+            PPT = '{0:10.2f}'.format(data.PPT[i])
+            out_f.write(','.join([
+                YEAR, MONTH, DAY, LENGTH, TDW, TW, SW, HADD,
+                RTMM, ETPMM, ETMM, GW, PPT]).replace(' ', '') + '\n')
     if param.LK >= 2:
         res_f.write(
             '\n**** GLBGN = {0:10.4f}{2:10s} ***** GLEND = {1:10.4f}\n'.format(

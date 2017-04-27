@@ -22,7 +22,7 @@ Usage:
     Lat/Lon are in decimal degrees with lon being negative for western hemisphere.
     Thornton-Running B calculation parameters named as TR_B0, TR_B1, TR_B2,
     Mean monthly dew point depression (ko) named as KO_JAN, KO_FEB, etc.
-  Optional reservoir depth variables RDM (method) and RDU (unis) can also exist in reservoir_paramters.csv.
+  Optional reservoir depth variables RDM (method) and RDU (units) can also exist in reservoir_paramters.csv.
   Reservoirs can be specified using a list in code or obtained automatically from data folders.
   Edit "default.ini" file for wrevap_gcm, parameters will be updated by script to 
     reservoir specific contents from parameters in "reservoir_parameters.csv".

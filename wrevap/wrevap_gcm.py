@@ -156,13 +156,14 @@ def check_param_in_list(p_value, p_list, p_name):
     """"""
     if p_value not in p_list:
         logging.error(
-            '\nERROR: {} paramter must be set to {}'.format(
+            '\nERROR: {} parameter must be set to {}'.format(
                 p_name, ', '.join(['{}'.format(i) for i in p_list])))
         sys.exit()
 
 def get_parameters():
     """"""
     # Parameter lists
+    
     LK_list = [0, 1, 2, 3]
     ISUM_list = [0, 1]
     IP_list = [0, 1]
@@ -187,7 +188,10 @@ def get_parameters():
     # Check that INI file opens and has section entry ([INPUTS])
     # Get list of all parameter keys
 
-    config = ConfigParser.SafeConfigParser()
+    # config = ConfigParser.SafeConfigParser()
+    # SafeConfigParser does not like '%s' specifications (have to use '%%s')
+        
+    config = ConfigParser.ConfigParser()
     try:
         config.readfp(open(paths.ini))
         config.has_section('INPUTS')
@@ -195,7 +199,7 @@ def get_parameters():
     except ConfigParser.NoSectionError:
         logging.error((
             '\nERROR: {}\n' +
-            '    Paramter INI file is missing a section line\n' +
+            '    Parameter INI file is missing a section line\n' +
             '    First data line in file needs to be: [INPUTS]\n' +
             '    Try removing INI file and rebuilding it\n').format(
             paths.ini))
@@ -203,7 +207,7 @@ def get_parameters():
     except ConfigParser.Error:
         logging.error((
             '\nERROR: {}\n' +
-            '    There is an unknown problem with paramter INI file \n' +
+            '    There is an unknown problem with parameter INI file \n' +
             '    Try removing INI file and rebuilding it\n').format(
             paths.ini))
         sys.exit()
@@ -233,18 +237,18 @@ def get_parameters():
     PHID = read_param('PHID', None, float, config)
     if not (-90 <= PHID <= 90):
         logging.error(
-            '\nERROR: PHID paramter must be between -90 and +90')
+            '\nERROR: PHID parameter must be between -90 and +90')
         sys.exit()
     P = read_param('P', None, float, config)
     if not P or P < 0:
-        logging.error("\nERROR: P paramter must be >= 0")
+        logging.error("\nERROR: P parameter must be >= 0")
         sys.exit()
     LK = read_param('LK', None, float, config)
     check_param_in_list(LK, LK_list, 'LK')
     if LK == 0:
         PPN = read_param('PPN', None, float, config)
         if not PPN or PPN < 0:
-            logging.error('\nERROR: PPN paramter must be >= 0 when LK==0')
+            logging.error('\nERROR: PPN parameter must be >= 0 when LK==0')
             sys.exit()
         RDM = 0
         RDU = 0
@@ -324,11 +328,11 @@ def get_parameters():
         SALT = read_param('SALT', None, float, config)
         if not DA or DA <= 0:
             logging.error(
-                '\nERROR: DA paramter must be > 0 when LK > 0')
+                '\nERROR: DA parameter must be > 0 when LK > 0')
             sys.exit()
         elif not SALT or SALT < 0:
             logging.error(
-                '\nERROR: SALT paramter must be >= 0 when LK > 0')
+                '\nERROR: SALT parameter must be >= 0 when LK > 0')
             sys.exit()
     ISUM = read_param('ISUM', 0, int, config)
     IP = read_param('IP', 0, int, config)

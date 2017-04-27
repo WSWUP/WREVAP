@@ -14,6 +14,12 @@ December 2016 modifications to support dynamic reservoir depths:
   RDB - Text relational database
   XLS - Workbook
 
+March 2017 modifications to support additional post processing:
++ Added ".OUT" csv output to wrevap as per wrevap_gcm.
+
+April 2017 modifications to address issue number 1:
++ Added 'DECIMAL' before 'RELATIVE HUMIDITY' in code, example ini file and documentation.
+
 # WREVAP - GCM
 
 Original WREVAP code was modified to support being run using Global Climite Model (GCM) input data.
@@ -25,3 +31,9 @@ Differences between versions:
 
 December 2016 modifications to support dynamic reservoir depths:
 + Same as WREVAP
+
+# run_wrevap
+
+March 2017 Created run_wrevap to to support single trace multiple reservoirs runs:
++ Created run_wrevap for managing single trace runs for multiple stations.
+  Uses a list of reservoirs and their respective ini and data files.
