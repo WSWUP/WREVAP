@@ -114,7 +114,7 @@ IS = 3
 # IV - CONTROL PARAMETER FOR HUMIDITY DATA
 #  0 - TD IS DEW POINT IN DEGREES [SEE PARAMETER IT FOR UNITS] (DEFAULT)
 #  1 - TD IS VAPOUR PRESSURE AT DEW POINT [MB]
-#  2 - TD IS RELATIVE HUMIDITY
+#  2 - TD IS DECIMAL RELATIVE HUMIDITY
 IV = 0
 
 # IP - CONTROL PARAMETER FOR STATION ALTITUDE
@@ -201,7 +201,7 @@ Please enter choice: 3
 ------------------------------------------------------------
   0 - TD IS DEW POINT IN DEG.C (default)
   1 - TD IS VAPOUR PRESSURE AT DEW POINT IN M
-  2 - TD IS RELATIVE HUMIDITY
+  2 - TD IS DECIMAL RELATIVE HUMIDITY
 ------------------------------------------------------------
 Please enter choice: 0
 
@@ -220,7 +220,7 @@ ENTER AVERAGE DEPTH OF LAKE [m]: 7
 ENTER TOTAL DISSOLVED SOLIDS OR SALINITY [mg/L or PPM]: 300
 ```
 
-Results data are saved to a file with same name as data CSV file but with an RES extension.  overall format of results file is very similar to original output file, but exact spacing of values was changed.
+Results data are saved to a file with same name as data CSV file but with an RES extension.  overall format of results file is very similar to original output file, but exact spacing of values was changed.  In addition, a CSV file with a ".OUT" extension is created to avoid conflict with input data file.
 
 Some error checking of input data and parameters is done but it is possible to enter inappropriate values.  Please refer to original documentation for details about suitable inputs and limitations of model.
 
