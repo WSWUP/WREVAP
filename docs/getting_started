@@ -1,0 +1,32 @@
+Getting Started
+===============
+
+Original Documentation
+----------------------
+It is highly recommended that the user read the original WREVAP model documentation.
+Most questions about the WREVAP model, parameters, or units, can be answered by
+referring to the original WREVAP documentation `(Morton et al., 1985)
+<https://github.com/DRI-WSWUP/WREVAP/blob/Python3/docs/Morton_1985.pdf>`_.
+This version of the WREVAP model is functionally similar to the original WREVAP,
+however input format and options has been significantly improved for easy data
+entry and formatting. Additional model improvements are noted below and described
+in detail in this documentation. All changes to the input data, parameters, and format are
+outlined below. Where possible, the section number of the original documentation
+is listed in square brackets [].
+
+
+
+Model Improvements
+------------------
+This version of the WREVAP model is functionally similar to the original WREVAP,
+however several model improvements have been added.
+
+The CRLE routines have been updated to support the use of variable reservoir depths.
+The original CRLE routines in WREVAP supported only the use of mean average depth,
+and an option has been added to allow the use of depth timeseries. WREVAP has also
+been updated to read in precipitation timeseries along with the required
+meteorological variables. Precipitation is not used in the calculation of evaporation,
+however it provides easy comparison between evaporation and precipitation, and allows
+for easy calculation of net evaporation. WREVAP has been modified to write out
+reservoir elevation and precipitation timeseries and to calculate mean monthly and
+annual values.  
